@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Thank You</title>
+<style>
+body{margin:0;height:100vh;background:#020d1f;overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:Segoe UI}
+.bg{position:absolute;width:100%;height:100%;background:radial-gradient(circle at center,#0a2342,#020d1f);overflow:hidden}
+.particles{position:absolute;width:100%;height:100%;background-image:radial-gradient(#1e90ff 1px, transparent 1px);background-size:40px 40px;opacity:0.3;animation:move 20s linear infinite}
+@keyframes move{from{transform:translateY(0)} to{transform:translateY(-200px)}}
+.card{position:relative;z-index:2;width:520px;max-width:90%;background:linear-gradient(180deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02));backdrop-filter:blur(20px);border:1px solid rgba(100,200,255,0.4);border-radius:20px;padding:40px 30px;text-align:center;box-shadow:0 0 60px rgba(0,150,255,0.3), inset 0 0 20px rgba(255,255,255,0.05)}
+.icon{width:80px;height:80px;margin:0 auto 15px;background:url('data:image/svg+xml;utf8,[STRIPPED]') center/contain no-repeat;filter:drop-shadow(0 0 10px #00aaff)}
+.card h1{color:#fff;font-size:42px;margin:10px 0 5px;font-weight:800;letter-spacing:0.5px;text-shadow:0 0 20px rgba(0,170,255,0.6)}
+.card .sub1{color:#8ec8ff;font-size:20px;font-weight:600;margin-bottom:8px}
+.card .sub2{color:#9ab0c8;font-size:15px;margin-bottom:25px}
+.badge{display:inline-block;padding:8px 20px;border-radius:20px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);color:#b8d4ee;font-size:13px}
+.btns{position:absolute;bottom:30px;width:90%;left:5%;display:flex;justify-content:space-between;z-index:3}
+.btn{padding:12px 28px;border-radius:30px;border:none;font-weight:700;cursor:pointer;font-size:14px;transition:0.2s}
+.home{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);backdrop-filter:blur(10px)}
+.exit{background:linear-gradient(135deg,#ff4d4d,#c40000);color:#fff;box-shadow:0 0 15px rgba(255,0,0,0.4)}
+.btn:hover{transform:scale(1.05)}
+
+/* EXIT WARNING POPUP - SAME THEME */
+.modal-bg{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);backdrop-filter:blur(5px);z-index:99;display:none;align-items:center;justify-content:center}
+.modal-bg.active{display:flex}
+.modal{width:350px;background:linear-gradient(180deg,#1e2a44,#111b2f);border:1px solid rgba(100,200,255,0.4);border-radius:16px;padding:25px;text-align:center;box-shadow:0 0 40px rgba(0,150,255,0.3)}
+.modal h3{color:#fff;margin:0 0 8px 0;font-size:18px}
+.modal p{color:#9ab0c8;font-size:13px;margin:0 0 20px 0}
+.modal-btns{display:flex;gap:12px;justify-content:center}
+.btn-yes{background:linear-gradient(135deg,#ff4d4d,#c40000);color:#fff;border:none;padding:10px 24px;border-radius:20px;font-weight:700;cursor:pointer}
+.btn-no{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.2);padding:10px 24px;border-radius:20px;font-weight:700;cursor:pointer}
+</style>
+</head>
+<body>
+<div class="bg"><div class="particles"></div></div>
+
+<div class="card">
+  <div class="icon"></div>
+  <h1>Thank You!</h1>
+  <div class="sub1">Predict AI Smart Disease System</div>
+  <div class="sub2">Your health is our priority</div>
+  <div class="badge">Presented by Zikra Nazeer Baig</div>
+</div>
+
+<div class="btns">
+  <button class="btn home" onclick="location.href='/patient'">🏠 Home</button>
+  <button class="btn exit" onclick="showExitWarning()">🚪 Exit</button>
+</div>
+
+<!-- WARNING POPUP -->
+<div class="modal-bg" id="exitModal">
+  <div class="modal">
+    <div style="font-size:40px;margin-bottom:10px">⚠️</div>
+    <h3>Do you want to Exit?</h3>
+    <p>You will exit the app without logout. Your data will remain safe.</p>
+    <div class="modal-btns">
+      <button class="btn-no" onclick="closeModal()">No, Stay</button>
+      <button class="btn-yes" onclick="confirmExit()">Yes, Exit</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function showExitWarning(){
+  document.getElementById('exitModal').classList.add('active');
+}
+function closeModal(){
+  document.getElementById('exitModal').classList.remove('active');
+}
+function confirmExit(){
+  // Bina logout ke exit - session safe
+  window.close();
+  setTimeout(() => {
+    if(!window.closed){
+      window.location.href = "about:blank";
+    }
+  }, 300);
+}
+
+// Particles
+let bg=document.querySelector('.bg');
+for(let i=0;i<30;i++){
+ let s=document.createElement('div');
+ s.style.position='absolute';
+ s.style.width='2px'; s.style.height='2px';
+ s.style.background='#00aaff';
+ s.style.borderRadius='50%';
+ s.style.left=Math.random()*100+'%';
+ s.style.top=Math.random()*100+'%';
+ s.style.boxShadow='0 0 10px #00aaff';
+ s.style.animation=`move ${5+Math.random()*10}s linear infinite`;
+ bg.appendChild(s);
+}
+</script>
+</body>
+</html>

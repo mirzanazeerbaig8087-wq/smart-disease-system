@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Predict AI - Result</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{margin:0;background:#0a1220;display:flex;justify-content:center;padding:20px;font-family:'Poppins',sans-serif}
+.main-card{width:780px;background:linear-gradient(180deg,#1e2a44,#111b2f);border:1px solid #2a3650;border-radius:18px;padding:22px;position:relative;min-height:700px;overflow:hidden}
+.setting-panel{position:absolute;top:65px;right:22px;width:240px;background:#1f2d4a;border:1px solid #3a4a6a;border-radius:12px;padding:8px;display:none;z-index:100}
+.setting-panel.active{display:block}
+.set-item{padding:11px 12px;border-radius:8px;color:#c2d1e8;font-size:11px;cursor:pointer;display:flex;gap:10px}
+.set-item:hover{background:#2a344d;color:#fff}
+.page{display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#1e2a44,#111b2f);border-radius:18px;padding:22px;box-sizing:border-box;z-index:50;overflow-y:auto}
+.page.active{display:block}
+.page-head{display:flex;align-items:center;gap:12px;margin-bottom:20px;border-bottom:1px solid #2a3650;padding-bottom:15px}
+.back{width:32px;height:32px;background:#2a344d;border:1px solid #3a4a6a;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff}
+.policy-box{background:#2a344d;border:1px solid #3a4a6a;border-radius:10px;padding:15px;margin:12px 0}
+.policy-box h4{margin:0 0 8px 0;color:#5cb3ff;font-size:13px}.policy-box p{margin:0;font-size:11.5px;color:#c2d1e8;line-height:1.7}
+.hist-item{background:#2a344d;border:1px solid #3a4a6a;border-radius:8px;padding:10px;margin:8px 0;display:flex;justify-content:space-between;align-items:center}
+.pdf-btn{background:#2f7bff;border:none;color:#fff;padding:6px 14px;border-radius:15px;font-size:10px;cursor:pointer}
+.patient-bar{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:14px 18px;display:grid;grid-template-columns:1.2fr 0.8fr 1fr 1fr 1.2fr;gap:10px;margin-bottom:14px}
+.pred-box{background:linear-gradient(180deg,#2a3a5a,#1f2d4a);border:1px solid #3a5a8a;border-radius:12px;padding:18px;text-align:center;margin-bottom:14px}
+.btn2{background:#2f7bff;border:none;color:#fff;padding:10px 20px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer}
+.three-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.small-card{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:16px;text-align:center;min-height:120px}
+.horiz-box{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.sym-tag{background:#1f2d4a;border:1px solid #3a4a6a;color:#e6eefc;padding:5px 11px;border-radius:20px;font-size:10px;margin:3px;display:inline-block}
+.lab-tag{padding:6px 12px;border-radius:20px;font-size:10px;background:#1f2d4a;color:#7bc8ff;border:1px solid #3a4a6a;margin:3px;display:inline-block}
+.hosp-item{display:flex;justify-content:space-between;align-items:center;background:#1f2d4a;padding:10px 12px;border-radius:8px;margin:6px 0;font-size:11px}
+</style>
+</head>
+<body>
+<div class="main-card" id="captureArea">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+<div style="display:flex;align-items:center;gap:9px">
+<div style="width:28px;height:28px;background:linear-gradient(135deg,#3a7bff,#5aa0ff);border-radius:7px;display:flex;align-items:center;justify-content:center;">⬡</div>
+<div><div style="color:#6aa8ff;font-weight:800;font-size:19px;line-height:1">Predict AI</div><div style="color:#6b7fa3;font-size:7.5px;letter-spacing:1.2px;font-weight:600;margin-top:2px">SMART DISEASE SYSTEM</div></div>
+</div>
+<div style="cursor:pointer" onclick="toggleSet()"><div style="width:34px;height:34px;background:#2a344d;border:1px solid #3a4a6a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">⚙️</div></div>
+<div class="setting-panel" id="setPanel">
+<div class="set-item" onclick="openPage('historyPage')">📄 My Reports History</div>
+<div class="set-item" onclick="openPage('privacyPage')">🔒 Privacy Policy</div>
+<div class="set-item" onclick="openPage('helpPage')">❓ Help & Support</div>
+<div class="set-item" onclick="openPage('aboutPage')">ℹ️ About Us</div>
+<div style="height:1px;background:#2a3650;margin:5px 0"></div>
+<div class="set-item" style="color:#ff8a8a" onclick="window.location.href='/logout'">🚪 Logout</div>
+</div>
+</div>
+
+<div id="homeContent">
+<div class="patient-bar">
+<div><div style="font-size:9px;color:#7b8aa5">PATIENT NAME</div><div style="color:#fff;font-size:12px;font-weight:600">{{ result.patient_name or result.get('patient_name','Patient') }}</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">AGE</div><div style="color:#fff;font-size:12px">{{ result.age or 'N/A' }} Y</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">GENDER</div><div style="color:#fff;font-size:12px">{{ result.gender or 'N/A' }}</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">DATE</div><div style="color:#fff;font-size:12px">{{ result.date or '' }}</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">DURATION</div><div style="color:#fff;font-size:12px">{{ result.duration or 'N/A' }}</div></div>
+</div>
+
+<div class="pred-box">
+<h2 style="margin:0;color:#5cb3ff;font-size:22px">{{ result.disease }} - {{ result.confidence }}%</h2>
+<p style="color:#aabbd5;font-size:11px;margin:6px 0 0 0">Prediction Accuracy: {{ result.confidence }}% | Symptoms Analyzed: {{ result.symptoms }}</p>
+<p style="color:#ff8a8a;font-size:10px;margin-top:6px">⚠️ Consult your doctor before taking any action - AI analysis is not a final diagnosis</p>
+<p style="color:#7b8aa5;font-size:9px;margin-top:4px">Original Input: {{ result.original_input }}</p>
+</div>
+
+<div class="three-grid">
+<div class="small-card"><div style="font-size:26px">🍎</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Diet Plan</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.diet or 'Balanced diet' }}</div></div>
+<div class="small-card"><div style="font-size:26px">🏃</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Exercise</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.exercise or 'Light walk' }}</div></div>
+<div class="small-card"><div style="font-size:26px">🛡️</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Precaution</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.precaution or 'Consult doctor' }}</div></div>
+</div>
+
+<div class="horiz-box" style="padding:12px 15px; margin-bottom:12px;">
+<div style="display:flex;justify-content:space-between;margin-bottom:6px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">⚠️ Emergency Alert</h4></div>
+{% if result.is_emergency %}
+<p style="margin:0;font-size:11px;color:#ff4b4b;font-weight:700;line-height:1.4">🚨 EMERGENCY DETECTED: Your symptoms are critical. Please consult a {{ result.doctor }} as soon as possible.</p>
+{% else %}
+<p style="margin:0;font-size:11px;color:#c2d1e8;line-height:1.4">✅ No Emergency Detected. Your symptoms are not critical. But please consult {{ result.doctor }} for proper treatment.</p>
+{% endif %}
+</div>
+
+<div class="horiz-box">
+<div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">📋 Your Symptoms / Disease Description</h4><span style="font-size:8px;background:#1f2d4a;border:1px solid #3a4a6a;color:#7b8aa5;padding:3px 8px;border-radius:20px">AI Analyzed</span></div>
+<div>
+{% if result.symptoms %}
+  {% for s in result.symptoms.split(',') if s.strip() %}
+    <span class="sym-tag">{{ s.strip() }}</span>
+  {% endfor %}
+{% else %}
+  <span class="sym-tag">No symptoms</span>
+{% endif %}
+</div>
+<div style="background:#1f2d4a;border-radius:8px;padding:12px;margin-top:12px;font-size:11px;color:#c2d1e8;line-height:1.6"><b style="color:#7b8aa5;font-size:9px">DISEASE DESCRIPTION</b><br><br>{{ result.description }}</div>
+</div>
+
+<div class="horiz-box">
+<div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">🧪 Suitable Lab Test</h4></div>
+<div>
+{% if result.lab_tests %}
+  {% for test in result.lab_tests %}<span class="lab-tag">🧪 {{ test }}</span>{% endfor %}
+{% else %}
+  <span class="lab-tag">CBC</span>
+{% endif %}
+</div>
+</div>
+
+<div class="horiz-box">
+<div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">📍 Nearest Hospital & Suitable Doctor</h4><span style="font-size:8px;background:#1f2d4a;border:1px solid #3a4a6a;color:#7b8aa5;padding:3px 8px;border-radius:20px">{{ result.doctor }}</span></div>
+<div id="hospitalList"><p style="color:#7b8aa5;font-size:10px">Click below button to allow location and find nearby hospitals.</p></div>
+<button class="btn2" style="width:100%;margin-top:10px" onclick="findNearby('{{ result.doctor }}')">📍 Check Nearest {{ result.doctor }} By Your Home</button>
+</div>
+
+<div style="display:flex;justify-content:center;gap:12px;margin-top:18px">
+<button style="padding:11px 22px;border-radius:20px;background:#2a344d;border:1px solid #3a4a6a;color:#c2d1e8;font-size:11px;cursor:pointer;font-weight:600" onclick="window.location.href='/pp'">← Predict Again</button>
+<button class="btn2" style="padding:11px 30px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#3a7bff,#5aa0ff)" onclick="window.location.href='/thankyou'">Next →</button>
+</div>
+
+</div>
+
+<div class="page" id="historyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">My Reports History</h2></div><div id="historyList">Loading history...</div><button class="btn2" style="width:100%;margin-top:15px" onclick="saveExactPDF()">Save Current Report as PDF</button></div>
+<div class="page" id="privacyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Privacy Policy</h2></div><div class="policy-box"><h4>Data Security</h4><p>All data encrypted AES-256 and SSL. Stored securely.</p></div></div>
+<div class="page" id="helpPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Help & Support</h2></div><div class="policy-box"><p>Email: support@predictai.com | Nagpur, Maharashtra</p></div></div>
+<div class="page" id="aboutPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">About</h2></div><div class="policy-box"><p>Predict AI v2.0 - 100+ Diseases | Translation: WAZAN KI KMAI → Weight Loss</p></div></div>
+</div>
+
+<script>
+function toggleSet(){document.getElementById('setPanel').classList.toggle('active')}
+function openPage(id){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.getElementById('setPanel').classList.remove('active');
+ if(id=='historyPage'){ loadHistory(); }
+}
+function closePage(){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))}
+
+async function loadHistory(){
+ let box = document.getElementById('historyList');
+ // LocalStorage history (from pp.html)
+ let local = JSON.parse(localStorage.getItem('all_patients')||'[]');
+ if(local.length>0){
+   box.innerHTML = local.map(r=>`<div class="hist-item"><div><div style="font-size:12px;color:#fff;font-weight:600">${r.date} - ${r.symptoms.substring(0,30)}</div><div style="font-size:10px;color:#7b8aa5">${r.name} - ${r.age}Y</div></div><button class="pdf-btn" onclick="saveExactPDF()">PDF</button></div>`).join('');
+   return;
+ }
+ box.innerHTML="<p style='color:#7b8aa5;font-size:11px'>No history found in localStorage.</p>";
+}
+
+function findNearby(spec){
+    let listBox = document.getElementById('hospitalList');
+    if(!navigator.geolocation){ listBox.innerHTML="<p style='color:#ff8a8a'>Geolocation not supported</p>"; return; }
+    listBox.innerHTML="<p style='color:#5cb3ff;font-size:11px'>📡 Fetching your location...</p>";
+    navigator.geolocation.getCurrentPosition(
+        (pos)=>{ showHospitals(pos, spec); },
+        (err)=>{ listBox.innerHTML=`<p style='color:#ff8a8a;font-size:11px'>Location denied: ${err.message}.</p>`; },
+        { enableHighAccuracy:true, timeout:10000 }
+    );
+}
+
+function showHospitals(position, spec){
+    let lat = position.coords.latitude; let lon = position.coords.longitude;
+    let listBox = document.getElementById('hospitalList');
+    listBox.innerHTML=`
+        <div class="hosp-item"><div><b>Ruby Hall Clinic</b><br><span style="font-size:9px;color:#7b8aa5">${spec} - Pune</span></div><div style="text-align:right"><div style="color:#5cb3ff">2.3 KM</div><a href="https://www.google.com/maps/search/${spec}+hospital/@${lat},${lon},14z" target="_blank" style="color:#7b8aa5;font-size:9px">Get Direction</a></div></div>
+        <div class="hosp-item"><div><b>Sahyadri Hospital</b><br><span style="font-size:9px;color:#7b8aa5">${spec} Specialist</span></div><div style="text-align:right"><div style="color:#5cb3ff">3.1 KM</div><a href="https://www.google.com/maps/search/${spec}+hospital/@${lat},${lon},14z" target="_blank" style="color:#7b8aa5;font-size:9px">Get Direction</a></div></div>
+        <button class="btn2" style="width:100%;margin-top:10px" onclick="findNearby('${spec}')">📍 Refresh</button>
+    `;
+}
+
+async function saveExactPDF(){
+ document.getElementById('setPanel').classList.remove('active');
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ let area=document.getElementById('captureArea');
+ let canvas=await html2canvas(area,{backgroundColor:'#0a1220',scale:2,useCORS:true});
+ let imgData=canvas.toDataURL('image/png');
+ let {jsPDF}=window.jspdf;
+ let pdf=new jsPDF('p','mm','a4');
+ let w=pdf.internal.pageSize.getWidth();
+ let h=(canvas.height * w)/canvas.width;
+ pdf.addImage(imgData,'PNG',0,0,w,h);
+ pdf.save(`PredictAI_{{ result.patient_name }}_Report.pdf`);
+}
+</script>
+</body>
+</html>
