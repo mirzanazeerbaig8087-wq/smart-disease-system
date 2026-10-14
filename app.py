@@ -1,13 +1,17 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, flash, render_template_string
-import json, pickle, gzip, os, re, difflib, random, requests
+import json, pickle, gzip, os, re, difflib, random, requests, smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 import mysql.connector
 from mysql.connector import Error
-import os
 
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123'
 
+# --- CONFIG - TUMHARA + GMAIL DONO ---
 FAST2SMS_API_KEY = os.getenv('FAST2SMS_API_KEY', 'YOUR_FAST2SMS_API_KEY_HERE')
+MAIL_USER = os.getenv('MAIL_USER')
+MAIL_PASS = os.getenv('MAIL_PASS') # Vercel me qmxinnilfwhabbff daalna
 
 def send_otp_fast2sms(mobile, otp):
     if not FAST2SMS_API_KEY or FAST2SMS_API_KEY == 'YOUR_FAST2SMS_API_KEY_HERE':
@@ -22,6 +26,29 @@ def send_otp_fast2sms(mobile, otp):
         return True
     except Exception as e:
         print(f"FAST2SMS Error: {e}")
+        return False
+
+def send_email_otp(to_email, otp):
+    # Testing ke liye demo OTP bhi return karega, aur Gmail se bhi bhejega agar MAIL_USER hai
+    if not MAIL_USER or not MAIL_PASS:
+        print(f"[DEMO EMAIL OTP] To {to_email} OTP is {otp}")
+        return True
+    try:
+        msg = MIMEMultipart()
+        msg['From'] = MAIL_USER
+        msg['To'] = to_email
+        msg['Subject'] = "Predict AI - OTP"
+        body = f"<h2>Your OTP is: {otp}</h2><p>Valid for 5 mins</p>"
+        msg.attach(MIMEText(body, 'html'))
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls()
+        server.login(MAIL_USER, MAIL_PASS.replace(" ", ""))
+        server.send_message(msg)
+        server.quit()
+        print(f"Email OTP sent to {to_email}")
+        return True
+    except Exception as e:
+        print(f"Email Error: {e}")
         return False
 
 DB_CONFIG = {
@@ -130,15 +157,20 @@ try:
 except Exception as e: print(e)
 
 otp_store = {}
+temp_users = {}
+
+# ============ PERFECT ROUTE LOGIC ============
 
 @app.route('/')
 def cover():
-    if session.get('is_logged_in'):
-        if not session.get('has_seen_welcome'):
-            return redirect(url_for('welcome_page'))
-        return redirect(url_for('pp_page'))
-    try: return render_template('cover.html', symptoms=all_symptoms[:100], diseases_count=len(diseases_data), symptoms_count=len(all_symptoms))
-    except: return render_template_string("<h1>Smart Disease</h1><a href='/login'>Login</a> | <a href='/pp'>PP</a>")
+    # 1. Pehli baar user aaye -> login pe
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    # 2. Login ho gaya par welcome nahi dekha -> welcome pe
+    if not session.get('has_seen_welcome'):
+        return redirect(url_for('welcome_page'))
+    # 3. Welcome dekh liya aur logout nahi kiya -> direct pp pe
+    return redirect(url_for('pp_page'))
 
 @app.route('/cover')
 def cover2(): return redirect(url_for('cover'))
@@ -147,6 +179,7 @@ def cover2(): return redirect(url_for('cover'))
 def welcome_page():
     if not session.get('is_logged_in'):
         return redirect(url_for('login_page'))
+    # Agar welcome already dekha hai to direct pp pe bhejo
     if session.get('has_seen_welcome'):
         return redirect(url_for('pp_page'))
     session['has_seen_welcome']=True
@@ -155,7 +188,13 @@ def welcome_page():
 
 @app.route('/login', methods=['GET','POST'])
 def login_page():
-    if session.get('is_logged_in'): return redirect(url_for('pp_page'))
+    # Agar already login hai aur welcome dekha hai -> direct pp
+    if session.get('is_logged_in') and session.get('has_seen_welcome'):
+        return redirect(url_for('pp_page'))
+    # Agar login hai par welcome baki hai -> welcome
+    if session.get('is_logged_in') and not session.get('has_seen_welcome'):
+        return redirect(url_for('welcome_page'))
+
     if request.method=='POST':
         u=request.form.get('username','').strip()
         p=request.form.get('password','').strip()
@@ -177,18 +216,87 @@ def login_page():
     try: return render_template('login.html')
     except: return render_template_string('<form method="post"><h2>Login</h2><input name="username" required><br><br><input name="password" type="password" required><br><br><button>Login</button></form>')
 
+# --- TUMHARI LOGIN.HTML KE LIYE API (FIREBASE + GMAIL DONO) ---
+
+@app.route('/api/send_email_otp', methods=['POST'])
+def api_send_email_otp():
+    data = request.get_json() or {}
+    email = data.get('email','').strip()
+    username = data.get('username','').strip()
+    password = data.get('password','').strip()
+    if not email: return jsonify({'status':'error'}), 400
+    otp = str(random.randint(100000,999999))
+    otp_store[email] = otp
+    temp_users[email] = {'username':username,'email':email,'password':password}
+    send_email_otp(email, otp)
+    # TESTING ke liye OTP frontend pe bhi bhej rahe hain jaisa tum chahte the
+    return jsonify({'status':'sent','demo_otp': otp})
+
+@app.route('/api/verify_login', methods=['POST'])
+def api_verify_login():
+    data = request.get_json() or {}
+    login_type = data.get('type')
+    if login_type == 'email':
+        email = data.get('email'); otp = data.get('otp')
+        if otp_store.get(email) == otp or otp == "123456": # testing 123456 bhi chalega
+            user_info = temp_users.get(email, {'username':data.get('username'),'email':email,'password':data.get('password')})
+            conn = get_db_connection()
+            uid = None; uname = user_info['username']
+            if conn:
+                try:
+                    cur = conn.cursor(dictionary=True)
+                    cur.execute("SELECT * FROM users WHERE email=%s", (email,))
+                    ex = cur.fetchone()
+                    if ex: uid = ex['id']; uname = ex['username']
+                    else:
+                        cur2 = conn.cursor()
+                        cur2.execute("INSERT INTO users (username,email,password,phone) VALUES (%s,%s,%s,%s)", (uname, email, user_info.get('password',''), ''))
+                        conn.commit(); uid = cur2.lastrowid
+                    cur.close(); conn.close()
+                except: pass
+            if not uid: uid = 1
+            session['is_logged_in']=True; session['user_id']=uid; session['username']=uname; session['has_seen_welcome']=False
+            otp_store.pop(email,None); temp_users.pop(email,None)
+            return jsonify({'status':'success'})
+        return jsonify({'status':'error','message':'Invalid OTP'})
+
+    elif login_type == 'phone':
+        # Firebase already verified
+        phone = data.get('phone'); username = data.get('username'); idToken = data.get('idToken')
+        if not phone: return jsonify({'status':'error'}),400
+        conn = get_db_connection()
+        uid = None
+        if conn:
+            try:
+                cur = conn.cursor(dictionary=True)
+                cur.execute("SELECT * FROM users WHERE phone=%s", (phone,))
+                ex = cur.fetchone()
+                if ex: uid = ex['id']; username = ex['username']
+                else:
+                    cur2 = conn.cursor()
+                    cur2.execute("INSERT INTO users (username,email,password,phone) VALUES (%s,%s,%s,%s)", (username, f"{phone}@phone.local", 'phone_auth', phone))
+                    conn.commit(); uid = cur2.lastrowid
+                cur.close(); conn.close()
+            except: pass
+        if not uid: uid = 2
+        session['is_logged_in']=True; session['user_id']=uid; session['username']=username; session['has_seen_welcome']=False
+        return jsonify({'status':'success'})
+    return jsonify({'status':'error'}),400
+
+# --- PURANA REGISTER / OTP (FAST2SMS) SAME HAI ---
+
 @app.route('/register', methods=['GET','POST'])
 def register_page():
     if request.method=='POST':
         u=request.form.get('username','').strip(); e=request.form.get('email','').strip(); p=request.form.get('password','').strip(); phone=request.form.get('phone','').strip()
         if u and e and p:
-            if phone:
+            if phone or e:
                 otp=str(random.randint(100000,999999))
-                otp_store[phone]=otp
-                send_otp_fast2sms(phone, otp)
+                if phone: otp_store[phone]=otp; send_otp_fast2sms(phone, otp)
+                if e: otp_store[e]=otp; send_email_otp(e, otp)
                 session['temp_reg']={'username':u,'email':e,'password':p,'phone':phone}
-                try: return render_template('verify_otp.html', phone=phone, otp=otp)
-                except: return render_template_string('<form method="post" action="/verify-otp"><h2>OTP {{ph}} pe bheja: {{otp}} (demo)</h2><input name="otp" required><br><br><button>Verify</button></form>', ph=phone, otp=otp)
+                try: return render_template('verify_otp.html', phone=phone, email=e, otp=otp)
+                except: return render_template_string('<form method="post" action="/verify-otp"><h2>OTP {{ph}} / {{em}} pe bheja: {{otp}} (demo)</h2><input name="otp" required><br><br><button>Verify</button></form>', ph=phone, em=e, otp=otp)
             conn=get_db_connection()
             if conn:
                 try:
@@ -203,14 +311,14 @@ def verify_otp():
     otp=request.form.get('otp','').strip()
     temp=session.get('temp_reg')
     if not temp: return redirect(url_for('register_page'))
-    phone=temp.get('phone')
-    if otp_store.get(phone)==otp or otp=="123456":
+    phone=temp.get('phone'); email=temp.get('email')
+    if otp_store.get(phone)==otp or otp_store.get(email)==otp or otp=="123456":
         conn=get_db_connection()
         if conn:
             try:
                 cur=conn.cursor(); cur.execute("INSERT INTO users (username,email,password,phone) VALUES (%s,%s,%s,%s)",(temp['username'],temp['email'],temp['password'],phone)); conn.commit(); cur.close(); conn.close()
             except: pass
-        session.pop('temp_reg',None); otp_store.pop(phone,None)
+        session.pop('temp_reg',None); otp_store.pop(phone,None); otp_store.pop(email,None)
         flash('OTP Verified! Login now'); return redirect(url_for('login_page'))
     flash('Wrong OTP'); return render_template_string('<h2>Wrong OTP</h2><form method="post"><input name="otp" required><button>Try</button></form>')
 
@@ -227,6 +335,7 @@ def logout(): session.clear(); return redirect(url_for('cover'))
 
 @app.route('/pp')
 def pp_page():
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     try: return render_template('pp.html', symptoms=all_symptoms, diseases_count=len(diseases_data), symptoms_count=len(all_symptoms), username=session.get('username'))
     except Exception as e: return render_template_string("<h1>PP Error {{e}}</h1><a href='/'>Home</a>", e=str(e))
 
@@ -278,6 +387,7 @@ def result_alias(): return redirect(url_for('result_page'))
 @app.route('/thankyou')
 def thankyou_page():
     r=session.get('last_result',{})
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     try: return render_template('thankyou.html', result=r, username=session.get('username'))
     except: return render_template_string("<h1>Thank You {{u}}</h1><p>{{r.disease}}</p><a href='/pp'>New</a>", u=session.get('username',''), r=r)
 

@@ -62,7 +62,6 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 </div>
 
 <script>
-// ✅ FIXED CONFIG - SAHI API KEY
 const firebaseConfig = {
   apiKey: "AIzaSyA4ceS0Afc8Rz2n8-kE0oO-fBICsO93xB4",
   authDomain: "smart-disease-system.firebaseapp.com",
@@ -82,14 +81,87 @@ window.onload = () => {
 let otpSent = false; let tempUser = {};
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
+
 function otpAutoJump(boxes){ boxes.forEach((b,i)=>{ b.addEventListener('input', ()=>{ if(b.value && i<5) boxes[i+1].focus(); }); b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' &&!b.value && i>0) boxes[i-1].focus(); }); }); }
 otpAutoJump(document.querySelectorAll('.otp-box')); otpAutoJump(document.querySelectorAll('.otp-box2'));
 
-// EMAIL LOGIN
-document.getElementById('emailForm').addEventListener('submit', async function(e){ e.preventDefault(); let u=username.value.trim(); let em=email.value.trim(); let pass=password.value.trim(); let err=document.getElementById('error'); if(u.length<3||!em.includes('@')||pass.length<4){err.innerText="Fill all fields correctly"; return;} err.innerText=""; if(!otpSent){otpSent=true;otpArea.style.display="flex";mainBtn.innerText="Sending OTP...";tempUser={username:u,email:em,password:pass};let res=await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});let d=await res.json();if(d.demo_otp)alert("DEMO OTP: "+d.demo_otp);else alert("OTP sent to "+em);mainBtn.innerText="Verify & Login";}else{let otp=Array.from(document.querySelectorAll('.otp-box')).map(b=>b.value).join('');tempUser.otp=otp;tempUser.type="email";let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});let data=await res.json();if(data.status=="success") window.location.href='/welcome'; else err.innerText="Invalid OTP";}});
+function autoFillOtp(boxes, otpStr){
+  if(!otpStr || otpStr.length!=6) return;
+  boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
+}
 
-// PHONE LOGIN - FIXED
-document.getElementById('phoneForm').addEventListener('submit', async function(e){ e.preventDefault(); let u=p_username.value.trim(); let ph=phone.value.trim(); let err=document.getElementById('error2'); if(u.length<3||!/^\d{10}$/.test(ph)){err.innerText="Check Username & 10 digit phone";return;} err.innerText=""; if(phoneBtn.innerText=="Send OTP"){try{phoneBtn.innerText="Sending...";tempUser={username:u,phone:ph};confirmationResult=await firebase.auth().signInWithPhoneNumber("+91"+ph,window.recaptchaVerifier);otpArea2.style.display="flex";phoneBtn.innerText="Verify & Login";}catch(error){err.innerText=error.message;phoneBtn.innerText="Send OTP"; if(window.recaptchaVerifier){window.recaptchaVerifier.clear(); window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'});}}}else{let otp=Array.from(document.querySelectorAll('.otp-box2')).map(b=>b.value).join('');try{phoneBtn.innerText="Verifying...";let result=await confirmationResult.confirm(otp);let idToken=await result.user.getIdToken();let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",idToken:idToken})});let data=await res.json();if(data.status=="success") window.location.href='/welcome'; else { window.location.href='/welcome'; } }catch(error){err.innerText="Invalid OTP";phoneBtn.innerText="Verify & Login";}}});
+// EMAIL LOGIN - GMAIL + TESTING AUTOFILL DONO
+document.getElementById('emailForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  let u=username.value.trim(); let em=email.value.trim(); let pass=password.value.trim();
+  let err=document.getElementById('error');
+  if(u.length<3||!em.includes('@')||pass.length<4){err.innerText="Fill all fields correctly"; return;}
+  err.innerText="";
+  if(!otpSent){
+    otpSent=true;
+    otpArea.style.display="flex";
+    mainBtn.innerText="Sending OTP...";
+    tempUser={username:u,email:em,password:pass};
+    try{
+      let res=await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
+      let d=await res.json();
+      if(d.demo_otp){
+        // TESTING AUTOFILL
+        autoFillOtp(document.querySelectorAll('.otp-box'), d.demo_otp);
+        alert("DEMO OTP (Auto-filled): "+d.demo_otp);
+      }else{
+        alert("OTP sent to "+em+" via Gmail");
+      }
+      mainBtn.innerText="Verify & Login";
+    }catch(er){
+      err.innerText="Failed to send OTP";
+      mainBtn.innerText="Login";
+      otpSent=false;
+    }
+  }else{
+    let otp=Array.from(document.querySelectorAll('.otp-box')).map(b=>b.value).join('');
+    if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
+    tempUser.otp=otp; tempUser.type="email";
+    mainBtn.innerText="Verifying...";
+    let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
+    let data=await res.json();
+    if(data.status=="success") window.location.href='/welcome';
+    else { err.innerText="Invalid OTP"; mainBtn.innerText="Verify & Login"; }
+  }
+});
+
+// PHONE LOGIN - FIREBASE + FAST2SMS TESTING
+document.getElementById('phoneForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  let u=p_username.value.trim(); let ph=phone.value.trim(); let err=document.getElementById('error2');
+  if(u.length<3||!/^\d{10}$/.test(ph)){err.innerText="Check Username & 10 digit phone";return;}
+  err.innerText="";
+  if(phoneBtn.innerText=="Send OTP"){
+    try{
+      phoneBtn.innerText="Sending...";
+      tempUser={username:u,phone:ph};
+      confirmationResult=await firebase.auth().signInWithPhoneNumber("+91"+ph,window.recaptchaVerifier);
+      otpArea2.style.display="flex";
+      phoneBtn.innerText="Verify & Login";
+    }catch(error){
+      err.innerText=error.message;
+      phoneBtn.innerText="Send OTP";
+      if(window.recaptchaVerifier){window.recaptchaVerifier.clear(); window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'});}
+    }
+  }else{
+    let otp=Array.from(document.querySelectorAll('.otp-box2')).map(b=>b.value).join('');
+    if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
+    try{
+      phoneBtn.innerText="Verifying...";
+      let result=await confirmationResult.confirm(otp);
+      let idToken=await result.user.getIdToken();
+      let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",idToken:idToken})});
+      let data=await res.json();
+      if(data.status=="success") window.location.href='/welcome';
+      else { window.location.href='/welcome'; }
+    }catch(error){err.innerText="Invalid OTP";phoneBtn.innerText="Verify & Login";}
+  }
+});
 </script>
 </body>
 </html>
