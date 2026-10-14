@@ -3,8 +3,6 @@
 <head>
 <title>Login - Predict AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
 <style>
 body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif}
 .card{width:360px;background:#ffffff;border-radius:20px;padding:28px 26px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #f0f0f0}
@@ -22,7 +20,7 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 .login-btn{width:100%;padding:13px;background:linear-gradient(90deg,#6bb6ff,#2f80ff);border:none;border-radius:12px;color:white;font-weight:600;font-size:14px;cursor:pointer}
 .login-link{text-align:center;font-size:12px;color:#2a6bff;font-weight:600;cursor:pointer;margin-top:14px}
 #error,#error2{color:#ff3b3b;font-size:11px;text-align:center;margin-top:10px;min-height:14px}
-#recaptcha-container{margin:10px 0;transform:scale(0.9)}
+.demo-note{font-size:11px;color:#2f80ff;background:#eef5ff;padding:6px 10px;border-radius:8px;text-align:center;margin-bottom:10px;font-weight:600;display:none}
 </style>
 </head>
 <body>
@@ -53,7 +51,7 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
   <form id="phoneForm">
     <input class="input-box" id="p_username" placeholder="USER NAME" autocomplete="off">
     <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric" autocomplete="off">
-    <div id="recaptcha-container"></div>
+    <div id="demoNote" class="demo-note">TESTING MODE: OTP is 123456</div>
     <div id="otpArea2" style="display:none;flex-direction:column;align-items:center;margin:8px 0 18px 0"><div class="otp-label">ENTER OTP</div><div class="otp-row"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"></div></div>
     <button class="login-btn" type="submit" id="phoneBtn">Send OTP</button>
     <p id="error2"></p>
@@ -62,23 +60,9 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 </div>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyA4ceS0Afc8Rz2n8-kE0oO-fBICsO93xB4",
-  authDomain: "smart-disease-system.firebaseapp.com",
-  projectId: "smart-disease-system",
-  storageBucket: "smart-disease-system.firebasestorage.app",
-  messagingSenderId: "198877755360",
-  appId: "1:198877755360:web:74cf1b684ec7cdd71cdd85"
-};
-firebase.initializeApp(firebaseConfig);
-
-let confirmationResult;
-window.onload = () => {
-  window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'});
-  recaptchaVerifier.render();
-}
-
 let otpSent = false; let tempUser = {};
+const TEST_PHONE_OTP = "876532"; // YEHI TESTING OTP HAI
+
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
 
@@ -90,7 +74,7 @@ function autoFillOtp(boxes, otpStr){
   boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
 
-// EMAIL LOGIN - GMAIL + TESTING AUTOFILL DONO
+// EMAIL LOGIN - GMAIL APP PASSWORD (REAL) + DEMO AUTOFILL
 document.getElementById('emailForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=username.value.trim(); let em=email.value.trim(); let pass=password.value.trim();
@@ -106,11 +90,7 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
       let res=await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
       let d=await res.json();
       if(d.demo_otp){
-        // TESTING AUTOFILL
         autoFillOtp(document.querySelectorAll('.otp-box'), d.demo_otp);
-        alert("DEMO OTP (Auto-filled): "+d.demo_otp);
-      }else{
-        alert("OTP sent to "+em+" via Gmail");
       }
       mainBtn.innerText="Verify & Login";
     }catch(er){
@@ -130,36 +110,36 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
   }
 });
 
-// PHONE LOGIN - FIREBASE + FAST2SMS TESTING
+// PHONE LOGIN - SIRF TESTING, NO FIREBASE, NO FAST2SMS
 document.getElementById('phoneForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=p_username.value.trim(); let ph=phone.value.trim(); let err=document.getElementById('error2');
   if(u.length<3||!/^\d{10}$/.test(ph)){err.innerText="Check Username & 10 digit phone";return;}
   err.innerText="";
   if(phoneBtn.innerText=="Send OTP"){
-    try{
-      phoneBtn.innerText="Sending...";
-      tempUser={username:u,phone:ph};
-      confirmationResult=await firebase.auth().signInWithPhoneNumber("+91"+ph,window.recaptchaVerifier);
-      otpArea2.style.display="flex";
-      phoneBtn.innerText="Verify & Login";
-    }catch(error){
-      err.innerText=error.message;
-      phoneBtn.innerText="Send OTP";
-      if(window.recaptchaVerifier){window.recaptchaVerifier.clear(); window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'});}
-    }
+    // TESTING OTP LOGIC
+    phoneBtn.innerText="Sending...";
+    await new Promise(r=>setTimeout(r,600)); // halka delay real jaisa
+    tempUser={username:u,phone:ph};
+    document.getElementById("demoNote").style.display="block";
+    otpArea2.style.display="flex";
+    autoFillOtp(document.querySelectorAll('.otp-box2'), TEST_PHONE_OTP);
+    phoneBtn.innerText="Verify & Login";
   }else{
     let otp=Array.from(document.querySelectorAll('.otp-box2')).map(b=>b.value).join('');
     if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
-    try{
-      phoneBtn.innerText="Verifying...";
-      let result=await confirmationResult.confirm(otp);
-      let idToken=await result.user.getIdToken();
-      let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",idToken:idToken})});
+    phoneBtn.innerText="Verifying...";
+    await new Promise(r=>setTimeout(r,400));
+    if(otp === TEST_PHONE_OTP){
+      // Backend pe bhi verify karwa sakte ho agar chaho, par testing ke liye direct success
+      let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",otp:otp})});
       let data=await res.json();
-      if(data.status=="success") window.location.href='/welcome';
-      else { window.location.href='/welcome'; }
-    }catch(error){err.innerText="Invalid OTP";phoneBtn.innerText="Verify & Login";}
+      // Agar backend check nahi karta to bhi welcome bhej do
+      window.location.href='/welcome';
+    }else{
+      err.innerText="Invalid OTP! Use 876532";
+      phoneBtn.innerText="Verify & Login";
+    }
   }
 });
 </script>
