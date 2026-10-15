@@ -12,7 +12,7 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 .logo-sub{font-size:11px;color:#8a9bb5;letter-spacing:2.5px;text-transform:uppercase;font-weight:500;margin:7px 0 0 0}
 .input-box{width:100%;padding:13px 14px;background:#f8f9fb;border:1px solid #e9ecf1;border-radius:12px;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;font-family:'Poppins',sans-serif;text-transform:uppercase}
 .input-box:focus{border-color:#2a6bff;background:#fff}
-#otpArea{display:none;flex-direction:column;align-items:center;margin:8px 0 18px 0}
+#otpArea, #otpArea2{display:none;flex-direction:column;align-items:center;margin:8px 0 18px 0}
 .otp-label{font-size:11px;color:#5a6b8a;font-weight:600;margin-bottom:8px;letter-spacing:0.5px}
 .otp-row{display:flex;gap:8px;justify-content:center}
 .otp-box{width:42px;height:46px;text-align:center;border:1.5px solid #dbe2ee;border-radius:10px;font-size:18px;font-weight:600;outline:none;background:#f8f9fb}
@@ -21,6 +21,7 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 .login-link{text-align:center;font-size:12px;color:#2a6bff;font-weight:600;cursor:pointer;margin-top:14px}
 #error,#error2{color:#ff3b3b;font-size:11px;text-align:center;margin-top:10px;min-height:14px}
 .demo-note{font-size:11px;color:#2f80ff;background:#eef5ff;padding:6px 10px;border-radius:8px;text-align:center;margin-bottom:10px;font-weight:600;display:none}
+.hidden-otp{position:absolute;opacity:0;pointer-events:none;height:0;width:0;}
 </style>
 </head>
 <body>
@@ -32,10 +33,23 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
     <p class="logo-sub">smart disease system</p>
   </div>
   <form id="emailForm">
-    <input class="input-box" id="username" placeholder="USER NAME" autocomplete="off">
-    <input class="input-box" id="email" placeholder="EMAIL ID" type="email" autocomplete="off">
-    <input class="input-box" id="password" placeholder="PASSWORD" type="password" autocomplete="off">
-    <div id="otpArea"><div class="otp-label">ENTER OTP</div><div class="otp-row"><input class="otp-box" maxlength="1"><input class="otp-box" maxlength="1"><input class="otp-box" maxlength="1"><input class="otp-box" maxlength="1"><input class="otp-box" maxlength="1"><input class="otp-box" maxlength="1"></div></div>
+    <input class="input-box" id="username" placeholder="USER NAME" autocomplete="username">
+    <input class="input-box" id="email" placeholder="EMAIL ID" type="email" autocomplete="email">
+    <input class="input-box" id="password" placeholder="PASSWORD" type="password" autocomplete="new-password">
+
+    <div id="otpArea">
+      <div class="otp-label">ENTER OTP (Check Gmail)</div>
+      <!-- YE HIDDEN INPUT SE HI AUTOFILL HOGA -->
+      <input id="hiddenEmailOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
+      <div class="otp-row">
+        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+    </div>
     <button class="login-btn" type="submit" id="mainBtn">Login</button>
     <p id="error"></p>
   </form>
@@ -49,10 +63,21 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
     <p class="logo-sub">smart disease system</p>
   </div>
   <form id="phoneForm">
-    <input class="input-box" id="p_username" placeholder="USER NAME" autocomplete="off">
-    <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric" autocomplete="off">
-    <div id="demoNote" class="demo-note">TESTING MODE: OTP is 123456</div>
-    <div id="otpArea2" style="display:none;flex-direction:column;align-items:center;margin:8px 0 18px 0"><div class="otp-label">ENTER OTP</div><div class="otp-row"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"><input class="otp-box otp-box2" maxlength="1"></div></div>
+    <input class="input-box" id="p_username" placeholder="USER NAME" autocomplete="username">
+    <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric" autocomplete="tel">
+    <div id="demoNote" class="demo-note">TESTING MODE: OTP is 123456 - Auto-filled</div>
+    <div id="otpArea2">
+      <div class="otp-label">ENTER OTP</div>
+      <input id="hiddenPhoneOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
+      <div class="otp-row">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
+      </div>
+    </div>
     <button class="login-btn" type="submit" id="phoneBtn">Send OTP</button>
     <p id="error2"></p>
   </form>
@@ -61,20 +86,43 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 
 <script>
 let otpSent = false; let tempUser = {};
-const TEST_PHONE_OTP = "876532"; // YEHI TESTING OTP HAI
+const TEST_PHONE_OTP = "123456"; // FINAL FIXED OTP
 
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
 
-function otpAutoJump(boxes){ boxes.forEach((b,i)=>{ b.addEventListener('input', ()=>{ if(b.value && i<5) boxes[i+1].focus(); }); b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' &&!b.value && i>0) boxes[i-1].focus(); }); }); }
-otpAutoJump(document.querySelectorAll('.otp-box')); otpAutoJump(document.querySelectorAll('.otp-box2'));
+function otpAutoJump(boxes){
+  boxes.forEach((b,i)=>{
+    b.addEventListener('input', ()=>{ if(b.value && i<5) boxes[i+1].focus(); });
+    b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' &&!b.value && i>0) boxes[i-1].focus(); });
+  });
+}
+const emailBoxes = document.querySelectorAll('#otpArea.otp-box');
+const phoneBoxes = document.querySelectorAll('.otp-box2');
+otpAutoJump(emailBoxes); otpAutoJump(phoneBoxes);
 
 function autoFillOtp(boxes, otpStr){
   if(!otpStr || otpStr.length!=6) return;
   boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
 
-// EMAIL LOGIN - GMAIL APP PASSWORD (REAL) + DEMO AUTOFILL
+// ANDROID OTP AUTOFILL API - Email & Phone dono ke liye
+function setupOTPAutofill(hiddenInput, boxes) {
+  if ('OTPCredential' in window) {
+    hiddenInput.addEventListener('input', () => {
+      autoFillOtp(boxes, hiddenInput.value);
+    });
+  }
+  // Jab Gmail/SMS se OTP aaye to hidden input me auto aayega
+  hiddenInput.addEventListener('input', (e) => {
+    let val = e.target.value.replace(/\D/g,'').slice(0,6);
+    if(val.length===6) autoFillOtp(boxes, val);
+  });
+}
+setupOTPAutofill(document.getElementById('hiddenEmailOtp'), emailBoxes);
+setupOTPAutofill(document.getElementById('hiddenPhoneOtp'), phoneBoxes);
+
+// EMAIL LOGIN - REAL GMAIL OTP
 document.getElementById('emailForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=username.value.trim(); let em=email.value.trim(); let pass=password.value.trim();
@@ -83,63 +131,69 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
   err.innerText="";
   if(!otpSent){
     otpSent=true;
-    otpArea.style.display="flex";
+    document.getElementById('otpArea').style.display="flex";
     mainBtn.innerText="Sending OTP...";
     tempUser={username:u,email:em,password:pass};
     try{
       let res=await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
       let d=await res.json();
       if(d.demo_otp){
-        autoFillOtp(document.querySelectorAll('.otp-box'), d.demo_otp);
+        // DEMO MODE - Auto fill
+        autoFillOtp(emailBoxes, d.demo_otp);
+        err.innerText="Demo Mode: OTP Auto-filled";
+        err.style.color="#2f80ff";
+      } else {
+        err.innerText="OTP sent to Gmail! Check inbox";
+        err.style.color="#00a651";
       }
       mainBtn.innerText="Verify & Login";
+      // Try to trigger browser OTP autofill
+      if(navigator.credentials){
+        try{
+          let cred = await navigator.credentials.get({otp:{transport:['sms']}});
+          if(cred) autoFillOtp(emailBoxes, cred.code);
+        }catch{}
+      }
     }catch(er){
-      err.innerText="Failed to send OTP";
+      err.innerText="Failed to send OTP - Check MAIL_USER/PASS in Render";
+      err.style.color="#ff3b3b";
       mainBtn.innerText="Login";
       otpSent=false;
     }
   }else{
-    let otp=Array.from(document.querySelectorAll('.otp-box')).map(b=>b.value).join('');
+    let otp=Array.from(emailBoxes).map(b=>b.value).join('');
     if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
     tempUser.otp=otp; tempUser.type="email";
     mainBtn.innerText="Verifying...";
     let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
     let data=await res.json();
     if(data.status=="success") window.location.href='/welcome';
-    else { err.innerText="Invalid OTP"; mainBtn.innerText="Verify & Login"; }
+    else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; mainBtn.innerText="Verify & Login"; }
   }
 });
 
-// PHONE LOGIN - SIRF TESTING, NO FIREBASE, NO FAST2SMS
+// PHONE LOGIN - TESTING ONLY 123456
 document.getElementById('phoneForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=p_username.value.trim(); let ph=phone.value.trim(); let err=document.getElementById('error2');
   if(u.length<3||!/^\d{10}$/.test(ph)){err.innerText="Check Username & 10 digit phone";return;}
   err.innerText="";
   if(phoneBtn.innerText=="Send OTP"){
-    // TESTING OTP LOGIC
     phoneBtn.innerText="Sending...";
-    await new Promise(r=>setTimeout(r,600)); // halka delay real jaisa
+    await new Promise(r=>setTimeout(r,500));
     tempUser={username:u,phone:ph};
     document.getElementById("demoNote").style.display="block";
-    otpArea2.style.display="flex";
-    autoFillOtp(document.querySelectorAll('.otp-box2'), TEST_PHONE_OTP);
+    document.getElementById("otpArea2").style.display="flex";
+    autoFillOtp(phoneBoxes, TEST_PHONE_OTP);
     phoneBtn.innerText="Verify & Login";
   }else{
-    let otp=Array.from(document.querySelectorAll('.otp-box2')).map(b=>b.value).join('');
+    let otp=Array.from(phoneBoxes).map(b=>b.value).join('');
     if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
+    if(otp!== TEST_PHONE_OTP){ err.innerText="Invalid! Use 123456"; return; }
     phoneBtn.innerText="Verifying...";
-    await new Promise(r=>setTimeout(r,400));
-    if(otp === TEST_PHONE_OTP){
-      // Backend pe bhi verify karwa sakte ho agar chaho, par testing ke liye direct success
-      let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",otp:otp})});
-      let data=await res.json();
-      // Agar backend check nahi karta to bhi welcome bhej do
-      window.location.href='/welcome';
-    }else{
-      err.innerText="Invalid OTP! Use 876532";
-      phoneBtn.innerText="Verify & Login";
-    }
+    let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",otp:otp})});
+    let data=await res.json();
+    if(data.status=="success" || true) window.location.href='/welcome';
   }
 });
 </script>
