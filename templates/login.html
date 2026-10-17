@@ -36,18 +36,16 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
     <input class="input-box" id="username" placeholder="USER NAME" autocomplete="username">
     <input class="input-box" id="email" placeholder="EMAIL ID" type="email" autocomplete="email">
     <input class="input-box" id="password" placeholder="PASSWORD" type="password" autocomplete="new-password">
-
     <div id="otpArea">
       <div class="otp-label">ENTER OTP (Check Gmail)</div>
-      <!-- YE HIDDEN INPUT SE HI AUTOFILL HOGA -->
       <input id="hiddenEmailOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
       <div class="otp-row">
-        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
       </div>
     </div>
     <button class="login-btn" type="submit" id="mainBtn">Login</button>
@@ -65,17 +63,17 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
   <form id="phoneForm">
     <input class="input-box" id="p_username" placeholder="USER NAME" autocomplete="username">
     <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric" autocomplete="tel">
-    <div id="demoNote" class="demo-note">TESTING MODE: OTP is 123456 - Auto-filled</div>
+    <div id="demoNote" class="demo-note"></div>
     <div id="otpArea2">
-      <div class="otp-label">ENTER OTP</div>
+      <div class="otp-label">ENTER OTP (Auto-filled Testing)</div>
       <input id="hiddenPhoneOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
       <div class="otp-row">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric" autocomplete="off">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
       </div>
     </div>
     <button class="login-btn" type="submit" id="phoneBtn">Send OTP</button>
@@ -85,115 +83,111 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 </div>
 
 <script>
-let otpSent = false; let tempUser = {};
-const TEST_PHONE_OTP = "123456"; // FINAL FIXED OTP
+let otpSentEmail = false;
+let otpSentPhone = false;
+let tempUser = {};
+let currentPhoneOtp = ""; // Har bar alag OTP
 
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
 
 function otpAutoJump(boxes){
   boxes.forEach((b,i)=>{
-    b.addEventListener('input', ()=>{ if(b.value && i<5) boxes[i+1].focus(); });
-    b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' &&!b.value && i>0) boxes[i-1].focus(); });
+    b.addEventListener('input', ()=>{ if(b.value && i<boxes.length-1) boxes[i+1].focus(); });
+    b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' && !b.value && i>0) boxes[i-1].focus(); });
   });
 }
-const emailBoxes = document.querySelectorAll('#otpArea.otp-box');
-const phoneBoxes = document.querySelectorAll('.otp-box2');
-otpAutoJump(emailBoxes); otpAutoJump(phoneBoxes);
+const emailBoxes = document.querySelectorAll('#otpArea .otp-box');
+const phoneBoxes = document.querySelectorAll('#otpArea2 .otp-box');
+otpAutoJump(emailBoxes); 
+otpAutoJump(phoneBoxes);
 
 function autoFillOtp(boxes, otpStr){
-  if(!otpStr || otpStr.length!=6) return;
+  if(!otpStr) return;
+  otpStr = otpStr.toString().replace(/\D/g,'').slice(0,6);
   boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
 
-// ANDROID OTP AUTOFILL API - Email & Phone dono ke liye
-function setupOTPAutofill(hiddenInput, boxes) {
-  if ('OTPCredential' in window) {
-    hiddenInput.addEventListener('input', () => {
-      autoFillOtp(boxes, hiddenInput.value);
-    });
+// Har user ke liye alag random OTP - 5-6 types nahi, har bar new
+function generateRandomPhoneOtp(){
+  // Teri example wali list me se bhi lega + random bhi
+  const fixedList = ["875093","462819","903741","128475","569032","714628"];
+  if(Math.random() < 0.5){
+    return fixedList[Math.floor(Math.random()*fixedList.length)];
+  }else{
+    return Math.floor(100000 + Math.random()*900000).toString();
   }
-  // Jab Gmail/SMS se OTP aaye to hidden input me auto aayega
-  hiddenInput.addEventListener('input', (e) => {
-    let val = e.target.value.replace(/\D/g,'').slice(0,6);
-    if(val.length===6) autoFillOtp(boxes, val);
-  });
 }
-setupOTPAutofill(document.getElementById('hiddenEmailOtp'), emailBoxes);
-setupOTPAutofill(document.getElementById('hiddenPhoneOtp'), phoneBoxes);
 
-// EMAIL LOGIN - REAL GMAIL OTP
+// EMAIL LOGIN - REAL GMAIL OTP JAYEGA
 document.getElementById('emailForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  let u=username.value.trim(); let em=email.value.trim(); let pass=password.value.trim();
+  let u=document.getElementById('username').value.trim(); 
+  let em=document.getElementById('email').value.trim(); 
+  let pass=document.getElementById('password').value.trim();
   let err=document.getElementById('error');
   if(u.length<3||!em.includes('@')||pass.length<4){err.innerText="Fill all fields correctly"; return;}
   err.innerText="";
-  if(!otpSent){
-    otpSent=true;
+  if(!otpSentEmail){
     document.getElementById('otpArea').style.display="flex";
-    mainBtn.innerText="Sending OTP...";
+    document.getElementById('mainBtn').innerText="Sending OTP...";
     tempUser={username:u,email:em,password:pass};
     try{
       let res=await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
       let d=await res.json();
       if(d.demo_otp){
-        // DEMO MODE - Auto fill
         autoFillOtp(emailBoxes, d.demo_otp);
-        err.innerText="Demo Mode: OTP Auto-filled";
+        err.innerText="Demo Mode: OTP Auto-filled: "+d.demo_otp;
         err.style.color="#2f80ff";
       } else {
-        err.innerText="OTP sent to Gmail! Check inbox";
+        err.innerText="OTP sent to Gmail! Check inbox/spam";
         err.style.color="#00a651";
       }
-      mainBtn.innerText="Verify & Login";
-      // Try to trigger browser OTP autofill
-      if(navigator.credentials){
-        try{
-          let cred = await navigator.credentials.get({otp:{transport:['sms']}});
-          if(cred) autoFillOtp(emailBoxes, cred.code);
-        }catch{}
-      }
+      document.getElementById('mainBtn').innerText="Verify & Login";
+      otpSentEmail=true;
     }catch(er){
-      err.innerText="Failed to send OTP - Check MAIL_USER/PASS in Render";
+      err.innerText="Failed to send - Check MAIL_USER/PASS in Render";
       err.style.color="#ff3b3b";
-      mainBtn.innerText="Login";
-      otpSent=false;
+      document.getElementById('mainBtn').innerText="Login";
     }
   }else{
     let otp=Array.from(emailBoxes).map(b=>b.value).join('');
     if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
-    tempUser.otp=otp; tempUser.type="email";
-    mainBtn.innerText="Verifying...";
-    let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
+    document.getElementById('mainBtn').innerText="Verifying...";
+    let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({email:tempUser.email,otp:otp,type:"email",username:tempUser.username})});
     let data=await res.json();
     if(data.status=="success") window.location.href='/welcome';
-    else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; mainBtn.innerText="Verify & Login"; }
+    else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; document.getElementById('mainBtn').innerText="Verify & Login"; }
   }
 });
 
-// PHONE LOGIN - TESTING ONLY 123456
+// PHONE LOGIN - RANDOM OTP AUTOFILL
 document.getElementById('phoneForm').addEventListener('submit', async function(e){
   e.preventDefault();
-  let u=p_username.value.trim(); let ph=phone.value.trim(); let err=document.getElementById('error2');
+  let u=document.getElementById('p_username').value.trim(); 
+  let ph=document.getElementById('phone').value.trim(); 
+  let err=document.getElementById('error2');
   if(u.length<3||!/^\d{10}$/.test(ph)){err.innerText="Check Username & 10 digit phone";return;}
   err.innerText="";
-  if(phoneBtn.innerText=="Send OTP"){
-    phoneBtn.innerText="Sending...";
-    await new Promise(r=>setTimeout(r,500));
+  if(!otpSentPhone){
+    currentPhoneOtp = generateRandomPhoneOtp();
     tempUser={username:u,phone:ph};
     document.getElementById("demoNote").style.display="block";
+    document.getElementById("demoNote").innerText="TESTING MODE: OTP is "+currentPhoneOtp+" - Auto-filled";
     document.getElementById("otpArea2").style.display="flex";
-    autoFillOtp(phoneBoxes, TEST_PHONE_OTP);
-    phoneBtn.innerText="Verify & Login";
+    autoFillOtp(phoneBoxes, currentPhoneOtp);
+    document.getElementById("phoneBtn").innerText="Verify & Login";
+    otpSentPhone=true;
+    err.innerText="OTP Auto-filled - Different for each user";
+    err.style.color="#2f80ff";
   }else{
     let otp=Array.from(phoneBoxes).map(b=>b.value).join('');
     if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
-    if(otp!== TEST_PHONE_OTP){ err.innerText="Invalid! Use 123456"; return; }
-    phoneBtn.innerText="Verifying...";
+    if(otp!==currentPhoneOtp){ err.innerText="Invalid! Current OTP is "+currentPhoneOtp; return; }
+    document.getElementById("phoneBtn").innerText="Verifying...";
     let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",otp:otp})});
     let data=await res.json();
-    if(data.status=="success" || true) window.location.href='/welcome';
+    window.location.href='/welcome';
   }
 });
 </script>

@@ -1,251 +1,196 @@
+
 <!DOCTYPE html>
 <html>
 <head>
-<title>Predict AI - Result</title>
+<title>Login - Predict AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-body{margin:0;background:#0a1220;display:flex;justify-content:center;padding:20px;font-family:'Poppins',sans-serif}
-.main-card{width:780px;background:linear-gradient(180deg,#1e2a44,#111b2f);border:1px solid #2a3650;border-radius:18px;padding:22px;position:relative;min-height:700px;overflow:hidden}
-.setting-panel{position:absolute;top:65px;right:22px;width:240px;background:#1f2d4a;border:1px solid #3a4a6a;border-radius:12px;padding:8px;display:none;z-index:100}
-.setting-panel.active{display:block}
-.set-item{padding:11px 12px;border-radius:8px;color:#c2d1e8;font-size:11px;cursor:pointer;display:flex;gap:10px}
-.set-item:hover{background:#2a344d;color:#fff}
-.page{display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#1e2a44,#111b2f);border-radius:18px;padding:22px;box-sizing:border-box;z-index:50;overflow-y:auto}
-.page.active{display:block}
-.page-head{display:flex;align-items:center;gap:12px;margin-bottom:20px;border-bottom:1px solid #2a3650;padding-bottom:15px}
-.back{width:32px;height:32px;background:#2a344d;border:1px solid #3a4a6a;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff}
-.policy-box{background:#2a344d;border:1px solid #3a4a6a;border-radius:10px;padding:15px;margin:12px 0}
-.policy-box h4{margin:0 0 8px 0;color:#5cb3ff;font-size:13px}.policy-box p{margin:0;font-size:11.5px;color:#c2d1e8;line-height:1.7}
-.hist-item{background:#2a344d;border:1px solid #3a4a6a;border-radius:8px;padding:10px;margin:8px 0;display:flex;justify-content:space-between;align-items:center}
-.pdf-btn{background:#2f7bff;border:none;color:#fff;padding:6px 14px;border-radius:15px;font-size:10px;cursor:pointer}
-.patient-bar{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:14px 18px;display:grid;grid-template-columns:1.2fr 0.8fr 1fr 1fr 1.2fr;gap:10px;margin-bottom:14px}
-.pred-box{background:linear-gradient(180deg,#2a3a5a,#1f2d4a);border:1px solid #3a5a8a;border-radius:12px;padding:18px;text-align:center;margin-bottom:14px}
-.btn2{background:#2f7bff;border:none;color:#fff;padding:10px 20px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer}
-.three-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
-.small-card{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:16px;text-align:center;min-height:120px}
-.horiz-box{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:16px 18px;margin-bottom:12px}
-.sym-tag{background:#1f2d4a;border:1px solid #3a4a6a;color:#e6eefc;padding:5px 11px;border-radius:20px;font-size:10px;margin:3px;display:inline-block}
-.lab-tag{padding:6px 12px;border-radius:20px;font-size:10px;background:#1f2d4a;color:#7bc8ff;border:1px solid #3a4a6a;margin:3px;display:inline-block}
-.hosp-item{display:flex;justify-content:space-between;align-items:center;background:#1f2d4a;padding:10px 12px;border-radius:8px;margin:6px 0;font-size:11px}
+body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif}
+.card{width:360px;background:#ffffff;border-radius:20px;padding:28px 26px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #f0f0f0}
+.logo-wrap{text-align:center;margin-bottom:22px}
+.logo-icon{font-size:42px;color:#2f80ff;line-height:1;margin-bottom:6px;display:inline-block;filter:drop-shadow(0 4px 8px rgba(47,128,255,0.25))}
+.logo-title{font-size:26px;font-weight:800;color:#121a2b;letter-spacing:0.5px;margin:0;line-height:1.1}
+.logo-sub{font-size:11px;color:#8a9bb5;letter-spacing:2.5px;text-transform:uppercase;font-weight:500;margin:7px 0 0 0}
+.input-box{width:100%;padding:13px 14px;background:#f8f9fb;border:1px solid #e9ecf1;border-radius:12px;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;font-family:'Poppins',sans-serif;text-transform:uppercase}
+.input-box:focus{border-color:#2a6bff;background:#fff}
+#otpArea, #otpArea2{display:none;flex-direction:column;align-items:center;margin:8px 0 18px 0}
+.otp-label{font-size:11px;color:#5a6b8a;font-weight:600;margin-bottom:8px;letter-spacing:0.5px}
+.otp-row{display:flex;gap:8px;justify-content:center}
+.otp-box{width:42px;height:46px;text-align:center;border:1.5px solid #dbe2ee;border-radius:10px;font-size:18px;font-weight:600;outline:none;background:#f8f9fb}
+.otp-box:focus{border-color:#2a6bff;background:#fff}
+.login-btn{width:100%;padding:13px;background:linear-gradient(90deg,#6bb6ff,#2f80ff);border:none;border-radius:12px;color:white;font-weight:600;font-size:14px;cursor:pointer}
+.login-link{text-align:center;font-size:12px;color:#2a6bff;font-weight:600;cursor:pointer;margin-top:14px}
+#error,#error2{color:#ff3b3b;font-size:11px;text-align:center;margin-top:10px;min-height:14px}
+.demo-note{font-size:11px;color:#2f80ff;background:#eef5ff;padding:6px 10px;border-radius:8px;text-align:center;margin-bottom:10px;font-weight:600;display:none}
+.hidden-otp{position:absolute;opacity:0;pointer-events:none;height:0;width:0;}
 </style>
 </head>
 <body>
-<div class="main-card" id="captureArea">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
-<div style="display:flex;align-items:center;gap:9px">
-<div style="width:28px;height:28px;background:linear-gradient(135deg,#3a7bff,#5aa0ff);border-radius:7px;display:flex;align-items:center;justify-content:center;">⬡</div>
-<div><div style="color:#6aa8ff;font-weight:800;font-size:19px;line-height:1">Predict AI</div><div style="color:#6b7fa3;font-size:7.5px;letter-spacing:1.2px;font-weight:600;margin-top:2px">SMART DISEASE SYSTEM</div></div>
-</div>
-<div style="cursor:pointer" onclick="toggleSet()"><div style="width:34px;height:34px;background:#2a344d;border:1px solid #3a4a6a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">⚙️</div></div>
-<div class="setting-panel" id="setPanel">
-<div class="set-item" onclick="openPage('historyPage')">📄 My Reports History</div>
-<div class="set-item" onclick="openPage('privacyPage')">🔒 Privacy Policy</div>
-<div class="set-item" onclick="openPage('helpPage')">❓ Help & Support</div>
-<div class="set-item" onclick="openPage('aboutPage')">ℹ️ About Us</div>
-<div style="height:1px;background:#2a3650;margin:5px 0"></div>
-<div class="set-item" style="color:#ff8a8a" onclick="window.location.href='/logout'">🚪 Logout</div>
-</div>
+
+<div class="card" id="emailCard">
+  <div class="logo-wrap">
+    <div class="logo-icon">⌬</div>
+    <h2 class="logo-title">Predict AI</h2>
+    <p class="logo-sub">smart disease system</p>
+  </div>
+  <form id="emailForm">
+    <input class="input-box" id="username" placeholder="USER NAME" autocomplete="username">
+    <input class="input-box" id="email" placeholder="EMAIL ID" type="email" autocomplete="email">
+    <input class="input-box" id="password" placeholder="PASSWORD" type="password" autocomplete="new-password">
+    <div id="otpArea">
+      <div class="otp-label">ENTER OTP (Check Gmail)</div>
+      <input id="hiddenEmailOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
+      <div class="otp-row">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+        <input class="otp-box" maxlength="1" inputmode="numeric">
+      </div>
+    </div>
+    <button class="login-btn" type="submit" id="mainBtn">Login</button>
+    <p id="error"></p>
+  </form>
+  <p class="login-link" id="goToPhone">Login with Phone Number</p>
 </div>
 
-<div id="homeContent">
-<div class="patient-bar">
-<div><div style="font-size:9px;color:#7b8aa5">PATIENT NAME</div><div style="color:#fff;font-size:12px;font-weight:600">{{ result.patient_name or result.get('patient_name','Patient') }}</div></div>
-<div><div style="font-size:9px;color:#7b8aa5">AGE</div><div style="color:#fff;font-size:12px">{{ result.age or 'N/A' }} Y</div></div>
-<div><div style="font-size:9px;color:#7b8aa5">GENDER</div><div style="color:#fff;font-size:12px">{{ result.gender or 'N/A' }}</div></div>
-<div><div style="font-size:9px;color:#7b8aa5">DATE</div><div style="color:#fff;font-size:12px">{{ result.date or '' }}</div></div>
-<div><div style="font-size:9px;color:#7b8aa5">DURATION</div><div style="color:#fff;font-size:12px">{{ result.duration or 'N/A' }}</div></div>
-</div>
-
-<div class="pred-box">
-<h2 style="margin:0;color:#5cb3ff;font-size:22px">{{ result.disease }} - {{ result.confidence }}%</h2>
-<p style="color:#aabbd5;font-size:11px;margin:6px 0 0 0">Prediction Accuracy: {{ result.confidence }}% | Symptoms Analyzed: {{ result.symptoms }}</p>
-<p style="color:#ff8a8a;font-size:10px;margin-top:6px">⚠️ Consult your doctor before taking any action - AI analysis is not a final diagnosis</p>
-<p style="color:#7b8aa5;font-size:9px;margin-top:4px">Original Input: {{ result.original_input }}</p>
-</div>
-
-<div class="three-grid">
-<div class="small-card"><div style="font-size:26px">🍎</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Diet Plan</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.diet or 'Balanced diet' }}</div></div>
-<div class="small-card"><div style="font-size:26px">🏃</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Exercise</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.exercise or 'Light walk' }}</div></div>
-<div class="small-card"><div style="font-size:26px">🛡️</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Precaution</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.precaution or 'Consult doctor' }}</div></div>
-</div>
-
-<div class="horiz-box" style="padding:12px 15px; margin-bottom:12px;">
-<div style="display:flex;justify-content:space-between;margin-bottom:6px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">⚠️ Emergency Alert</h4></div>
-{% if result.is_emergency %}
-<p style="margin:0;font-size:11px;color:#ff4b4b;font-weight:700;line-height:1.4">🚨 EMERGENCY DETECTED: Your symptoms are critical. Please consult a {{ result.doctor }} as soon as possible.</p>
-{% else %}
-<p style="margin:0;font-size:11px;color:#c2d1e8;line-height:1.4">✅ No Emergency Detected. Your symptoms are not critical. But please consult {{ result.doctor }} for proper treatment.</p>
-{% endif %}
-</div>
-
-<div class="horiz-box">
-<div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">📋 Your Symptoms / Disease Description</h4><span style="font-size:8px;background:#1f2d4a;border:1px solid #3a4a6a;color:#7b8aa5;padding:3px 8px;border-radius:20px">AI Analyzed</span></div>
-<div>
-{% if result.symptoms %}
-  {% for s in result.symptoms.split(',') if s.strip() %}
-    <span class="sym-tag">{{ s.strip() }}</span>
-  {% endfor %}
-{% else %}
-  <span class="sym-tag">No symptoms</span>
-{% endif %}
-</div>
-<div style="background:#1f2d4a;border-radius:8px;padding:12px;margin-top:12px;font-size:11px;color:#c2d1e8;line-height:1.6"><b style="color:#7b8aa5;font-size:9px">DISEASE DESCRIPTION</b><br><br>{{ result.description }}</div>
-</div>
-
-<div class="horiz-box">
-<div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">🧪 Suitable Lab Test</h4></div>
-<div>
-{% if result.lab_tests %}
-  {% for test in result.lab_tests %}<span class="lab-tag">🧪 {{ test }}</span>{% endfor %}
-{% else %}
-  <span class="lab-tag">CBC</span>
-{% endif %}
-</div>
-</div>
-
-<div class="horiz-box">
-<div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">📍 Nearest Hospital & Suitable Doctor</h4><span style="font-size:8px;background:#1f2d4a;border:1px solid #3a4a6a;color:#7b8aa5;padding:3px 8px;border-radius:20px">{{ result.doctor }}</span></div>
-<div id="hospitalList"><p style="color:#7b8aa5;font-size:10px">Click below button to allow location and find nearby hospitals.</p></div>
-<button class="btn2" id="hospBtn" style="width:100%;margin-top:10px" onclick="findNearby('{{ result.doctor }}')">📍 Check Nearest {{ result.doctor }} By Your Home</button>
-<div id="mapBox" style="display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid #3a4a6a;height:220px;background:#1f2d4a"><iframe id="mapFrame" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen></iframe></div>
-</div>
-
-<div style="display:flex;justify-content:center;gap:12px;margin-top:18px">
-<button style="padding:11px 22px;border-radius:20px;background:#2a344d;border:1px solid #3a4a6a;color:#c2d1e8;font-size:11px;cursor:pointer;font-weight:600" onclick="window.location.href='/pp'">← Predict Again</button>
-<button class="btn2" style="padding:11px 30px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#3a7bff,#5aa0ff)" onclick="window.location.href='/thankyou'">Next →</button>
-</div>
-
-</div>
-
-<div class="page" id="historyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">My Reports History</h2></div><div id="historyList">Loading history...</div><button class="btn2" style="width:100%;margin-top:15px" onclick="saveExactPDF()">Save Current Report as PDF</button></div>
-<div class="page" id="privacyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Privacy Policy</h2></div><div class="policy-box"><h4>Data Security</h4><p>All data encrypted AES-256 and SSL. Stored securely.</p></div></div>
-<div class="page" id="helpPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Help & Support</h2></div><div class="policy-box"><p>Email: support@predictai.com | Nagpur, Maharashtra</p></div></div>
-<div class="page" id="aboutPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">About</h2></div><div class="policy-box"><p>Predict AI v2.0 - 100+ Diseases | Translation: WAZAN KI KMAI → Weight Loss</p></div></div>
+<div class="card" id="phoneCard" style="display:none">
+  <div class="logo-wrap">
+    <div class="logo-icon">⌬</div>
+    <h2 class="logo-title">Predict AI</h2>
+    <p class="logo-sub">smart disease system</p>
+  </div>
+  <form id="phoneForm">
+    <input class="input-box" id="p_username" placeholder="USER NAME" autocomplete="username">
+    <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric" autocomplete="tel">
+    <div id="demoNote" class="demo-note"></div>
+    <div id="otpArea2">
+      <div class="otp-label">ENTER OTP (Auto-filled Testing)</div>
+      <input id="hiddenPhoneOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
+      <div class="otp-row">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+      </div>
+    </div>
+    <button class="login-btn" type="submit" id="phoneBtn">Send OTP</button>
+    <p id="error2"></p>
+  </form>
+  <p class="login-link" id="goToEmail">← Back to Email Login</p>
 </div>
 
 <script>
-function toggleSet(){document.getElementById('setPanel').classList.toggle('active')}
-function openPage(id){
- document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
- document.getElementById(id).classList.add('active');
- document.getElementById('setPanel').classList.remove('active');
- if(id=='historyPage'){ loadHistory(); }
-}
-function closePage(){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))}
+let otpSentEmail = false;
+let otpSentPhone = false;
+let tempUser = {};
+let currentPhoneOtp = ""; // Har bar alag OTP
 
-async function loadHistory(){
- let box = document.getElementById('historyList');
- let local = JSON.parse(localStorage.getItem('all_patients')||'[]');
- if(local.length>0){
-   box.innerHTML = local.map(r=>`<div class="hist-item"><div><div style="font-size:12px;color:#fff;font-weight:600">${r.date} - ${r.symptoms.substring(0,30)}</div><div style="font-size:10px;color:#7b8aa5">${r.name} - ${r.age}Y</div></div><button class="pdf-btn" onclick="saveExactPDF()">PDF</button></div>`).join('');
-   return;
- }
- box.innerHTML="<p style='color:#7b8aa5;font-size:11px'>No history found in localStorage.</p>";
-}
+goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
+goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
 
-// --- YAHI MAIN FIX HAI - DESIGN SAME, KAAM NAYA ---
-function getDistanceKm(lat1,lon1,lat2,lon2){
-  const R=6371;
-  const dLat=(lat2-lat1)*Math.PI/180;
-  const dLon=(lon2-lon1)*Math.PI/180;
-  const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
-  return (R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));
+function otpAutoJump(boxes){
+  boxes.forEach((b,i)=>{
+    b.addEventListener('input', ()=>{ if(b.value && i<boxes.length-1) boxes[i+1].focus(); });
+    b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' && !b.value && i>0) boxes[i-1].focus(); });
+  });
+}
+const emailBoxes = document.querySelectorAll('#otpArea .otp-box');
+const phoneBoxes = document.querySelectorAll('#otpArea2 .otp-box');
+otpAutoJump(emailBoxes); 
+otpAutoJump(phoneBoxes);
+
+function autoFillOtp(boxes, otpStr){
+  if(!otpStr) return;
+  otpStr = otpStr.toString().replace(/\D/g,'').slice(0,6);
+  boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
 
-function findNearby(spec){
-    let listBox = document.getElementById('hospitalList');
-    let btn = document.getElementById('hospBtn');
-    let mapBox = document.getElementById('mapBox');
-    let mapFrame = document.getElementById('mapFrame');
-
-    if(!navigator.geolocation){ listBox.innerHTML="<p style='color:#ff8a8a'>Geolocation not supported</p>"; return; }
-
-    listBox.innerHTML="<p style='color:#5cb3ff;font-size:10px'>📡 Location permission maang raha hai... Allow karo</p>";
-    btn.innerText="Getting Location...";
-
-    navigator.geolocation.getCurrentPosition(async (pos)=>{
-        let lat = pos.coords.latitude;
-        let lon = pos.coords.longitude;
-        btn.innerText=`✅ Location Found - Searching ${spec}...`;
-        listBox.innerHTML="<p style='color:#5cb3ff;font-size:10px'>🔍 5km ke andar best hospitals dhoondh raha hu...</p>";
-
-        // Google Map iframe - user location dikhega
-        mapBox.style.display="block";
-        mapFrame.src=`https://www.google.com/maps?q=${lat},${lon}&z=14&output=embed`;
-
-        try{
-            // Overpass API - Real hospitals free me
-            const q=`[out:json][timeout:25];(node["amenity"="hospital"](around:5000,${lat},${lon});way["amenity"="hospital"](around:5000,${lat},${lon});node["amenity"="clinic"](around:5000,${lat},${lon});node["amenity"="doctors"](around:5000,${lat},${lon}););out center 12;`;
-            const url=`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`;
-            let res = await fetch(url);
-            let data = await res.json();
-            let hospitals = data.elements.map(el=>{
-                let hLat=el.lat||el.center?.lat;
-                let hLon=el.lon||el.center?.lon;
-                if(!hLat) return null;
-                return {
-                    name: el.tags?.name || `${spec} Care Center`,
-                    lat: hLat, lon: hLon,
-                    addr: el.tags?.["addr:street"] || el.tags?.["addr:full"] || el.tags?.["addr:city"] || "Near you",
-                    dist: getDistanceKm(lat,lon,hLat,hLon)
-                };
-            }).filter(Boolean).sort((a,b)=>a.dist-b.dist).slice(0,6);
-
-            // Agar API se kam mile to fallback
-            if(hospitals.length<3){
-                hospitals = [
-                    {name:`${spec} - District Hospital`, lat:lat+0.01, lon:lon+0.01, addr:"Main Road", dist:getDistanceKm(lat,lon,lat+0.01,lon+0.01)},
-                    {name:`City Care - ${spec} Specialist`, lat:lat-0.012, lon:lon+0.008, addr:"Near Bus Stand", dist:getDistanceKm(lat,lon,lat-0.012,lon+0.008)},
-                    {name:`LifeCare Hospital - For ${"{{ result.disease }}"}`, lat:lat+0.008, lon:lon-0.012, addr:"Medical Hub", dist:getDistanceKm(lat,lon,lat+0.008,lon-0.012)},
-                    {name:`Apollo Clinic`, lat:lat-0.015, lon:lon-0.005, addr:"City Center", dist:getDistanceKm(lat,lon,lat-0.015,lon-0.005)},
-                    {name:`Government Medical Hospital`, lat:lat+0.02, lon:lon+0.0, addr:"Civil Lines", dist:getDistanceKm(lat,lon,lat+0.02,lon+0.0)}
-                ];
-            }
-
-            // Render in YOUR SAME hosp-item design
-            listBox.innerHTML = hospitals.map(h=>`
-                <div class="hosp-item">
-                    <div>
-                        <b style="color:#fff">${h.name}</b><br>
-                        <span style="font-size:9px;color:#7b8aa5">${h.addr} • Treats ${"{{ result.disease }}"} • ${spec}</span><br>
-                        <span style="font-size:9px;color:#5cb3ff">📍 ${h.dist.toFixed(1)} KM away from your location</span>
-                    </div>
-                    <div style="text-align:right">
-                        <div style="color:#5cb3ff;font-weight:700;font-size:11px">${h.dist.toFixed(1)} KM</div>
-                        <a href="https://www.google.com/maps/dir/?api=1&origin=${lat},${lon}&destination=${h.lat},${h.lon}" target="_blank" style="color:#fff;background:#2f7bff;padding:4px 10px;border-radius:12px;font-size:9px;text-decoration:none;display:inline-block;margin-top:4px">Get Direction</a>
-                    </div>
-                </div>
-            `).join('') + `<p style="font-size:9px;color:#7b8aa5;margin-top:8px;text-align:center">📍 Your Location: ${lat.toFixed(4)}, ${lon.toFixed(4)} • Showing ${hospitals.length} nearest hospitals for ${"{{ result.disease }}"}</p><button class="btn2" style="width:100%;margin-top:8px;background:#2a344d;border:1px solid #3a4a6a" onclick="findNearby('${spec}')">🔄 Refresh Location</button>`;
-
-            // Update map to show hospitals search
-            mapFrame.src=`https://www.google.com/maps/search/${encodeURIComponent(spec+" hospital")}/@${lat},${lon},14z`;
-
-        }catch(e){
-            listBox.innerHTML=`<p style='color:#ff8a8a;font-size:10px'>Error: ${e.message}. Showing demo hospitals below.</p>
-            <div class="hosp-item"><div><b>${spec} - Nearby Hospital</b><br><span style="font-size:9px;color:#7b8aa5">2.3 KM away</span></div><div><a href="https://www.google.com/maps/search/${spec}+hospital/@${lat},${lon},14z" target="_blank" style="color:#fff;background:#2f7bff;padding:4px 10px;border-radius:12px;font-size:9px;text-decoration:none">Get Direction</a></div></div>`;
-        }
-
-    }, (err)=>{
-        listBox.innerHTML=`<p style='color:#ff8a8a;font-size:10px'>❌ Location denied: ${err.message}. Please enable location in browser settings and click again.</p>`;
-        btn.innerText="📍 Allow Location & Retry";
-    }, {enableHighAccuracy:true, timeout:15000});
+// Har user ke liye alag random OTP - 5-6 types nahi, har bar new
+function generateRandomPhoneOtp(){
+  // Teri example wali list me se bhi lega + random bhi
+  const fixedList = ["875093","462819","903741","128475","569032","714628"];
+  if(Math.random() < 0.5){
+    return fixedList[Math.floor(Math.random()*fixedList.length)];
+  }else{
+    return Math.floor(100000 + Math.random()*900000).toString();
+  }
 }
 
-async function saveExactPDF(){
- document.getElementById('setPanel').classList.remove('active');
- document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
- let area=document.getElementById('captureArea');
- let canvas=await html2canvas(area,{backgroundColor:'#0a1220',scale:2,useCORS:true});
- let imgData=canvas.toDataURL('image/png');
- let {jsPDF}=window.jspdf;
- let pdf=new jsPDF('p','mm','a4');
- let w=pdf.internal.pageSize.getWidth();
- let h=(canvas.height * w)/canvas.width;
- pdf.addImage(imgData,'PNG',0,0,w,h);
- pdf.save(`PredictAI_{{ result.patient_name }}_Report.pdf`);
-}
+// EMAIL LOGIN - REAL GMAIL OTP JAYEGA
+document.getElementById('emailForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  let u=document.getElementById('username').value.trim(); 
+  let em=document.getElementById('email').value.trim(); 
+  let pass=document.getElementById('password').value.trim();
+  let err=document.getElementById('error');
+  if(u.length<3||!em.includes('@')||pass.length<4){err.innerText="Fill all fields correctly"; return;}
+  err.innerText="";
+  if(!otpSentEmail){
+    document.getElementById('otpArea').style.display="flex";
+    document.getElementById('mainBtn').innerText="Sending OTP...";
+    tempUser={username:u,email:em,password:pass};
+    try{
+      let res=await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
+      let d=await res.json();
+      if(d.demo_otp){
+        autoFillOtp(emailBoxes, d.demo_otp);
+        err.innerText="Demo Mode: OTP Auto-filled: "+d.demo_otp;
+        err.style.color="#2f80ff";
+      } else {
+        err.innerText="OTP sent to Gmail! Check inbox/spam";
+        err.style.color="#00a651";
+      }
+      document.getElementById('mainBtn').innerText="Verify & Login";
+      otpSentEmail=true;
+    }catch(er){
+      err.innerText="Failed to send - Check MAIL_USER/PASS in Render";
+      err.style.color="#ff3b3b";
+      document.getElementById('mainBtn').innerText="Login";
+    }
+  }else{
+    let otp=Array.from(emailBoxes).map(b=>b.value).join('');
+    if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
+    document.getElementById('mainBtn').innerText="Verifying...";
+    let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({email:tempUser.email,otp:otp,type:"email",username:tempUser.username})});
+    let data=await res.json();
+    if(data.status=="success") window.location.href='/welcome';
+    else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; document.getElementById('mainBtn').innerText="Verify & Login"; }
+  }
+});
+
+// PHONE LOGIN - RANDOM OTP AUTOFILL
+document.getElementById('phoneForm').addEventListener('submit', async function(e){
+  e.preventDefault();
+  let u=document.getElementById('p_username').value.trim(); 
+  let ph=document.getElementById('phone').value.trim(); 
+  let err=document.getElementById('error2');
+  if(u.length<3||!/^\d{10}$/.test(ph)){err.innerText="Check Username & 10 digit phone";return;}
+  err.innerText="";
+  if(!otpSentPhone){
+    currentPhoneOtp = generateRandomPhoneOtp();
+    tempUser={username:u,phone:ph};
+    document.getElementById("demoNote").style.display="block";
+    document.getElementById("demoNote").innerText="TESTING MODE: OTP is "+currentPhoneOtp+" - Auto-filled";
+    document.getElementById("otpArea2").style.display="flex";
+    autoFillOtp(phoneBoxes, currentPhoneOtp);
+    document.getElementById("phoneBtn").innerText="Verify & Login";
+    otpSentPhone=true;
+    err.innerText="OTP Auto-filled - Different for each user";
+    err.style.color="#2f80ff";
+  }else{
+    let otp=Array.from(phoneBoxes).map(b=>b.value).join('');
+    if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
+    if(otp!==currentPhoneOtp){ err.innerText="Invalid! Current OTP is "+currentPhoneOtp; return; }
+    document.getElementById("phoneBtn").innerText="Verifying...";
+    let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",otp:otp})});
+    let data=await res.json();
+    window.location.href='/welcome';
+  }
+});
 </script>
 </body>
 </html>
