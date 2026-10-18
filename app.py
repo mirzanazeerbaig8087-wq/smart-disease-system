@@ -174,38 +174,94 @@ def logout():
     session.clear()
     return redirect(url_for('cover'))
 
-# --- APIs SAME ---
+# --- APIs FIXED - NO FIREBASE ---
+
+otp_store = {}  # email/phone -> {otp, time}
+temp_users = {}
+
 @app.route('/api/send_email_otp', methods=['POST'])
 def api_send_email_otp():
-    data=request.get_json() or {}
-    email=data.get('email','').strip()
-    otp=str(random.randint(100000,999999))
-    otp_store[email]={'otp':otp,'time':datetime.now()}
-    temp_users[email]={'username':data.get('username','User'),'email':email,'password':data.get('password','')}
-    ok=send_email_otp(email, otp)
-    if ok: return jsonify({'status':'sent'})
-    else: return jsonify({'status':'sent','demo_otp':otp})
+    data = request.get_json() or {}
+    email = data.get('email','').strip()
+    if not email or '@' not in email:
+        return jsonify({'status':'error','message':'Invalid email'}),400
+    
+    otp = str(random.randint(100000, 999999)) # Har baar naya
+    otp_store[email] = {'otp': otp, 'time': datetime.now()}
+    temp_users[email] = {'username': data.get('username','User'), 'email': email, 'password': data.get('password','')}
+    
+    ok = send_email_otp(email, otp)
+    if ok:
+        return jsonify({'status':'sent','message':'OTP sent to Gmail'})
+    else:
+        # Demo mode - OTP frontend pe dikhega
+        return jsonify({'status':'sent','demo_otp': otp, 'message': f'Demo OTP: {otp}'})
+
+@app.route('/api/send_phone_otp', methods=['POST'])
+def api_send_phone_otp():
+    data = request.get_json() or {}
+    phone = data.get('phone','').strip()
+    if not phone or len(phone) < 10:
+        return jsonify({'status':'error','message':'Invalid phone'}),400
+    
+    otp = str(random.randint(100000, 999999)) # Har baar naya random
+    otp_store[phone] = {'otp': otp, 'time': datetime.now()}
+    temp_users[phone] = {'username': data.get('username','User'), 'phone': phone}
+    
+    # Phone ke liye hamesha demo_otp return karo - SMS nahi bhejna
+    return jsonify({'status':'sent','demo_otp': otp, 'message': f'Phone OTP: {otp}'})
 
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
-    data=request.get_json() or {}
-    if data.get('type')=='email':
-        email=data.get('email','').strip(); otp=str(data.get('otp','')).strip()
-        stored=otp_store.get(email)
-        valid=False
-        if stored and stored['otp']==otp and datetime.now()-stored['time']<timedelta(minutes=10): valid=True
-        if otp=="123456": valid=True
-        if not valid: return jsonify({'status':'error','message':'Invalid OTP'}),400
-        user_info=temp_users.get(email,{'username':data.get('username','User'),'email':email})
-        session['is_logged_in']=True; session['user_id']=random.randint(1000,9999); session['username']=user_info['username']; session['has_seen_welcome']=False
-        otp_store.pop(email,None); temp_users.pop(email,None)
+    data = request.get_json() or {}
+    login_type = data.get('type')
+
+    if login_type == 'email':
+        email = data.get('email','').strip()
+        otp = str(data.get('otp','')).strip()
+        stored = otp_store.get(email)
+        
+        valid = False
+        if stored and stored['otp'] == otp and datetime.now() - stored['time'] < timedelta(minutes=10):
+            valid = True
+        if otp == "123456": # Master OTP testing ke liye
+            valid = True
+            
+        if not valid:
+            return jsonify({'status':'error','message':'Invalid or Expired OTP'}),400
+        
+        user_info = temp_users.get(email, {'username': data.get('username','User'), 'email': email})
+        session['is_logged_in'] = True
+        session['user_id'] = random.randint(1000,9999)
+        session['username'] = user_info['username']
+        session['has_seen_welcome'] = False
+        otp_store.pop(email, None)
         return jsonify({'status':'success'})
-    elif data.get('type')=='phone':
-        phone=data.get('phone','').strip(); username=data.get('username','User'); otp=str(data.get('otp','')).strip()
-        if len(otp)!=6 or not otp.isdigit(): return jsonify({'status':'error','message':'Enter 6 digit OTP'}),400
-        session['is_logged_in']=True; session['user_id']=random.randint(1000,9999); session['username']=username; session['has_seen_welcome']=False
+
+    elif login_type == 'phone':
+        phone = data.get('phone','').strip()
+        otp = str(data.get('otp','')).strip()
+        username = data.get('username','User')
+        stored = otp_store.get(phone)
+        
+        # PHONE: Har baar alag OTP, par testing me koi bhi 6 digit accept
+        valid = False
+        if stored and stored['otp'] == otp and datetime.now() - stored['time'] < timedelta(minutes=10):
+            valid = True
+        if len(otp) == 6 and otp.isdigit(): # Pehle jaisa - har baar different, koi bhi 6 digit chalega
+            valid = True
+        
+        if not valid:
+            return jsonify({'status':'error','message':'Enter 6 digit OTP'}),400
+        
+        session['is_logged_in'] = True
+        session['user_id'] = random.randint(1000,9999)
+        session['username'] = username
+        session['has_seen_welcome'] = False
+        otp_store.pop(phone, None)
         return jsonify({'status':'success'})
-    return jsonify({'status':'error'}),400
+
+    return jsonify({'status':'error','message':'Invalid type'}),400
 
 @app.route('/predict', methods=['POST'])
 def predict_route():
@@ -242,8 +298,7 @@ def predict_route():
     if conn:
         try:
             cur=conn.cursor()
-            cur.execute("INSERT INTO predictions (user_id,symptoms,predicted_disease,confidence,original_input,patient_name,age,gender,duration) VALUES (%s,%s,%s,%s,%s)", (session.get('user_id',0), result['symptoms'], result['disease'], result['confidence'], result['original_input'], result['patient_name'], str(result['age']), str(result['gender']), str(result['duration'])))
-            conn.commit(); cur.close(); conn.close()
+            cur.execute("INSERT INTO predictions (user_id,symptoms,predicted_disease,confidence,original_input,patient_name,age,gender,duration) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (session.get('user_id',0), result['symptoms'], result['disease'], result['confidence'], result['original_input'], result['patient_name'], str(result['age']), str(result['gender']), str(result['duration'])))
         except Exception as e: print(f"DB save error {e}")
     return redirect(url_for('result_page'))
 
