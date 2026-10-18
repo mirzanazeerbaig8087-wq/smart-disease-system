@@ -159,6 +159,7 @@ def welcome_page():
     session['has_seen_welcome'] = True
     return render_template('welcome.html', username=session.get('username','User'))
 
+@app.route('/patient')
 @app.route('/pp')
 @app.route('/pp.html')
 def pp_page():
@@ -166,12 +167,14 @@ def pp_page():
     return render_template('pp.html', symptoms=all_symptoms, username=session.get('username','User'))
 
 @app.route('/resultp')
+@app.route('/resultp.html')
 def result_page():
     r=session.get('last_result',{})
     if not r: return redirect(url_for('pp_page'))
     return render_template('resultp.html', result=r)
 
 @app.route('/thankyou')
+@app.route('/thankyou.html')
 def thankyou_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     r=session.get('last_result',{})
@@ -248,7 +251,7 @@ def predict_route():
     if conn:
         try:
             cur=conn.cursor()
-            cur.execute("INSERT INTO predictions (user_id,symptoms,predicted_disease,confidence,original_input,patient_name,age,gender,duration) VALUES (%s,%s,%s,%s,%s)", (session.get('user_id',0), result['symptoms'], result['disease'], result['confidence'], result['original_input'], result['patient_name'], str(result['age']), str(result['gender']), str(result['duration'])))
+            cur.execute("INSERT INTO predictions (user_id,symptoms,predicted_disease,confidence,original_input,patient_name,age,gender,duration) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (session.get('user_id',0), result['symptoms'], result['disease'], result['confidence'], result['original_input'], result['patient_name'], str(result['age']), str(result['gender']), str(result['duration'])))
             conn.commit()
             cur.close()
             conn.close()
