@@ -116,44 +116,45 @@ except Exception as e: print(f"Load error {e}")
 otp_store={}; temp_users={}
 
 # ===================== FINAL ROUTING FIX =====================
+# ===================== FINAL ROUTING FIX =====================
 @app.route('/')
-def cover():
-    if not session.get('is_logged_in'):
-        return render_template('cover.html')
-    if not session.get('has_seen_welcome'):
-        return redirect(url_for('welcome_page'))
-    return redirect(url_for('pp_page'))
-
 @app.route('/cover')
-def cover2():
+def cover():
+    # Cover hamesha dikhega - koi redirect nahi
     return render_template('cover.html')
-
-@app.route('/welcome')
-@app.route('/welcome.html')
-def welcome_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    if session.get('has_seen_welcome'): return redirect(url_for('pp_page'))
-    session['has_seen_welcome']=True
-    return render_template('welcome.html', username=session.get('username','User'))
 
 @app.route('/login')
 @app.route('/login.html')
 def login_page():
+    # Agar already login hai to
     if session.get('is_logged_in'):
-        if not session.get('has_seen_welcome'): return redirect(url_for('welcome_page'))
-        else: return redirect(url_for('pp_page'))
+        if not session.get('has_seen_welcome'):
+            return redirect(url_for('welcome_page')) # welcome nahi dekha to welcome
+        else:
+            return redirect(url_for('pp_page')) # welcome dekh liya to direct pp
     return render_template('login.html')
+
+@app.route('/welcome')
+@app.route('/welcome.html')
+def welcome_page():
+    if not session.get('is_logged_in'): 
+        return redirect(url_for('login_page'))
+    # Agar welcome pehle dekh liya hai to direct pp
+    if session.get('has_seen_welcome'):
+        return redirect(url_for('pp_page'))
+    # Pehli baar welcome dekhega
+    session['has_seen_welcome'] = True
+    return render_template('welcome.html', username=session.get('username','User'))
 
 @app.route('/pp')
 @app.route('/patient')
 @app.route('/pp.html')
-@app.route('/patient.html')
 def pp_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if not session.get('is_logged_in'): 
+        return redirect(url_for('login_page'))
     return render_template('pp.html', symptoms=all_symptoms, username=session.get('username','User'))
 
 @app.route('/resultp')
-@app.route('/result')
 @app.route('/resultp.html')
 def result_page():
     r=session.get('last_result',{})
@@ -161,15 +162,17 @@ def result_page():
     return render_template('resultp.html', result=r)
 
 @app.route('/thankyou')
-@app.route('/thank-you')
 @app.route('/thankyou.html')
 def thankyou_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if not session.get('is_logged_in'): 
+        return redirect(url_for('login_page'))
     r=session.get('last_result',{})
     return render_template('thankyou.html', result=r, username=session.get('username','User'))
 
 @app.route('/logout')
-def logout(): session.clear(); return redirect(url_for('cover'))
+def logout(): 
+    session.clear()
+    return redirect(url_for('cover'))
 
 # --- APIs SAME ---
 @app.route('/api/send_email_otp', methods=['POST'])
