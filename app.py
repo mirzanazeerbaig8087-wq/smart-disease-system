@@ -49,7 +49,7 @@ def get_db_connection():
         print(f"DB Error {e}")
         return None
 
-# ==================== 1000+ TRANSLATOR AUTO GENERATE (NO SYNTAX ERROR) ====================
+# ==================== 1000+ TRANSLATOR ====================
 def build_translator():
     base = {
         "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","halka bukhar","bukhar thand","bukhar khansi","thand ke sath bukhar","kapkapahat","thand lagna"],
@@ -58,7 +58,7 @@ def build_translator():
         "cold": ["sardi","zukam","jukaam","naak behna","naak band","cheek"],
         "sore throat": ["gala kharab","gale me dard","gala dard","gala kharash"],
         "fatigue": ["thakan","thakawat","kamzori","susti","bahut thakan"],
-        "abdominal pain": ["pet dard","pet me dard","pet kharab","pet me jalan","pet me marod"],
+        "abdominal pain": ["pet dard","pet me dard","pet kharab","pet me jalan","pet me marod", "pet derd"],
         "vomiting": ["ulti","ultiyan","matli","jeee ghabrana","ulti dast"],
         "diarrhea": ["dast","patla dast","loose motion","diarrhea"],
         "constipation": ["kabz","kabj","pet saaf nahi"],
@@ -74,12 +74,14 @@ def build_translator():
         "itching": ["khujli","kharish","khujali","bahut khujli"],
         "rash": ["daane","laal daane","chehre pe daane","sharir pe daane"],
         "swelling": ["soojan","sujan","pair me soojan","chehre pe soojan"],
-        "palpitations": ["dil tez dhadakna","dil ghabrana"],
-        "anxiety": ["ghabrahat","bechaini","dar lagna","tension"],
-        "insomnia": ["neend nahi","neend ki kami","neend na aana"],
+        "abdominal swelling": ["pet me soojan","pet fulna"],
+        "jaundice": ["piliya","peela pan"],
+        "yellow eyes": ["aankh peeli"],
+        "yellow skin": ["chamdi peeli"],
+        "dark urine": ["peela peshaab"],
+        "liver lump": ["pet me gath"],
     }
-    extra = ["fever","high fever","low fever","cough","dry cough","wet cough","cold","common cold","runny nose","stuffy nose","sneezing","sore throat","headache","migraine","dizziness","fatigue","weakness","body pain","muscle pain","joint pain","knee pain","back pain","neck pain","shoulder pain","chest pain","chest tightness","abdominal pain","stomach pain","bloating","gas","heartburn","nausea","vomiting","diarrhea","constipation","loss of appetite","weight loss","weight gain","excessive thirst","frequent urination","burning urination","blood in urine","dark urine","itching","skin rash","swelling","ankle swelling","face swelling","numbness","tingling","palpitations","rapid heartbeat","shortness of breath","wheezing","night sweats","cold sweats","shivering","tremor","seizure","fainting","memory loss","confusion","depression","anxiety","insomnia","blurred vision","double vision","red eyes","eye pain","ear pain","hearing loss","nosebleed","loss of smell","toothache","neck stiffness","hair loss","brittle nails","swollen glands","fever with chills","fever with rash","cough with blood","vomiting blood","hiccups","snoring","blood in stool","yellow skin","yellow eyes","pale skin"]
-    
+    extra = ["fever","high fever","low fever","cough","dry cough","wet cough","cold","common cold","runny nose","stuffy nose","sneezing","sore throat","headache","migraine","dizziness","fatigue","weakness","body pain","muscle pain","joint pain","knee pain","back pain","neck pain","shoulder pain","chest pain","chest tightness","abdominal pain","stomach pain","bloating","gas","heartburn","nausea","vomiting","diarrhea","constipation","loss of appetite","weight loss","weight gain","excessive thirst","frequent urination","burning urination","blood in urine","dark urine","itching","skin rash","swelling","ankle swelling","face swelling","numbness","tingling","palpitations","rapid heartbeat","shortness of breath","wheezing","night sweats","cold sweats","shivering","tremor","seizure","fainting","memory loss","confusion","depression","anxiety","insomnia","blurred vision","double vision","red eyes","eye pain","ear pain","hearing loss","nosebleed","loss of smell","toothache","neck stiffness","hair loss","brittle nails","swollen glands","fever with chills","fever with rash","cough with blood","vomiting blood","hiccups","snoring","blood in stool","yellow skin","yellow eyes","pale skin","abdominal swelling","liver lump"]
     trans = {}
     for eng, lst in base.items():
         for h in lst:
@@ -120,20 +122,41 @@ def parse_symptoms(raw, all_sym):
             if len(s)>2: cleaned.append(normalize(s, all_sym))
     return list(dict.fromkeys(cleaned))
 
-model=vectorizer=label_encoder=None; diseases_data={}; all_symptoms=[]
+# ==================== DISEASES.JSON SE PAKKA LOAD ====================
+model=vectorizer=label_encoder=None
+diseases_data={}
+all_symptoms=[]
 try:
+    d=None
     if os.path.exists('model.pkl.gz'):
         with gzip.open('model.pkl.gz','rb') as f: d=pickle.load(f)
     elif os.path.exists('model.pkl'):
         with open('model.pkl','rb') as f: d=pickle.load(f)
-    else: d=None
     if d and isinstance(d, dict):
-        diseases_data=d.get('diseases_data') or d.get('disease_data') or {}
+        diseases_data = d.get('diseases_data') or d.get('disease_data') or d.get('diseases') or {}
+    if not diseases_data and os.path.exists('disease_info.pkl'):
+        with open('disease_info.pkl','rb') as f: diseases_data=pickle.load(f)
+    for fname in ['diseases.json', 'disease.json', 'DISEASE.json', 'disease_data.json']:
+        if os.path.exists(fname):
+            try:
+                with open(fname,'r',encoding='utf-8') as f:
+                    loaded=json.load(f)
+                    if loaded and len(loaded) > len(diseases_data):
+                        diseases_data = loaded
+                        print(f"LOADED FROM {fname} - {len(diseases_data)} diseases")
+                        break
+                    elif loaded and not diseases_data:
+                        diseases_data = loaded
+                        print(f"LOADED FROM {fname} - {len(diseases_data)} diseases")
+                        break
+            except Exception as je:
+                print(f"Failed {fname}: {je}")
     if os.path.exists('symptoms.pkl'):
         with open('symptoms.pkl','rb') as f: all_symptoms=pickle.load(f)
-    if not diseases_data and os.path.exists('diseases.json'):
-        with open('diseases.json','r',encoding='utf-8') as f: diseases_data=json.load(f)
-except Exception as e: print(f"Load error {e}")
+    print(f"FINAL diseases_data count: {len(diseases_data)}")
+except Exception as e:
+    print(f"Load error {e}")
+    import traceback; traceback.print_exc()
 
 otp_store = {}
 temp_users = {}
@@ -230,10 +253,10 @@ def api_verify_login():
 def predict_route():
     raw=request.form.get('symptoms') or request.form.get('symptoms_text') or ""
     if not raw.strip(): return redirect(url_for('pp_page'))
-    cleaned=parse_symptoms(str(raw), [])
+    cleaned=parse_symptoms(str(raw), all_symptoms)
     scores=[]
     for dname, info in diseases_data.items():
-        full_text=info.get('Symptoms','').lower()
+        full_text=info.get('Symptoms','').lower() if isinstance(info, dict) else str(info).lower()
         full=[s.lower().strip() for s in re.split(r'\d+\.|,|;', full_text) if s.strip()]
         km=len(set(cleaned)&set(full))
         if km>0: scores.append((dname,km,info))
@@ -243,9 +266,9 @@ def predict_route():
     else:
         dname=list(diseases_data.keys())[0] if diseases_data else "Analysis Needed"
         dinfo=diseases_data.get(dname,{}) if diseases_data else {}; conf=35
-    lab=dinfo.get('Lab_Tests') or ["CBC"]
+    lab=dinfo.get('Lab_Tests') or ["CBC"] if isinstance(dinfo, dict) else ["CBC"]
     if isinstance(lab,str): lab=[s.strip() for s in re.split(r',|;', lab) if s.strip()]
-    result={'disease':dname,'confidence':round(float(conf),2),'description':dinfo.get('Description',''),'diet':dinfo.get('Diet','Balanced diet'),'exercise':dinfo.get('Exercise','Light walk'),'precaution':dinfo.get('Precautions','Consult doctor'),'lab_tests':lab,'doctor':dinfo.get('Specialist','General Physician'),'symptoms':", ".join(cleaned),'original_input':raw,'patient_name':request.form.get('patient_name') or session.get('username','Patient'),'age':request.form.get('age') or "N/A",'gender':request.form.get('gender') or "N/A",'duration':request.form.get('duration') or "N/A",'date':datetime.now().strftime("%d-%m-%Y %H:%M")}
+    result={'disease':dname,'confidence':round(float(conf),2),'description':dinfo.get('Description','') if isinstance(dinfo, dict) else '','diet':dinfo.get('Diet','Balanced diet') if isinstance(dinfo, dict) else 'Balanced diet','exercise':dinfo.get('Exercise','Light walk') if isinstance(dinfo, dict) else 'Light walk','precaution':dinfo.get('Precautions','Consult doctor') if isinstance(dinfo, dict) else 'Consult doctor','lab_tests':lab,'doctor':dinfo.get('Specialist','General Physician') if isinstance(dinfo, dict) else 'General Physician','symptoms':", ".join(cleaned),'original_input':raw,'patient_name':request.form.get('patient_name') or session.get('username','Patient'),'age':request.form.get('age') or "N/A",'gender':request.form.get('gender') or "N/A",'duration':request.form.get('duration') or "N/A",'date':datetime.now().strftime("%d-%m-%Y %H:%M")}
     session['last_result']=result
     conn=get_db_connection()
     if conn:
