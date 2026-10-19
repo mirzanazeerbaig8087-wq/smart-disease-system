@@ -2,10 +2,13 @@
 <html>
 <head>
     <title>Patient Details - Predict AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="theme-color" content="#0a1220">
+    <link rel="manifest" href="/static/manifest.json">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body { margin:0; padding:0; font-family:'Poppins',sans-serif; background:radial-gradient(circle at top,#162032,#0a1220); min-height:100vh; display:flex; justify-content:center; align-items:center; }
- .card { width:420px; background:linear-gradient(180deg,#1c2740,#121a2b); border:1px solid #2a3650; border-radius:18px; padding:25px; box-shadow:0 20px 60px rgba(0,0,0,0.5); position:relative; }
+        body { margin:0; padding:16px; font-family:'Poppins',sans-serif; background:radial-gradient(circle at top,#162032,#0a1220); min-height:100vh; display:flex; justify-content:center; align-items:center; box-sizing:border-box }
+ .card { width:100%; max-width:420px; background:linear-gradient(180deg,#1c2740,#121a2b); border:1px solid #2a3650; border-radius:18px; padding:25px; box-shadow:0 20px 60px rgba(0,0,0,0.5); position:relative; box-sizing:border-box }
  .topBar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; position:relative; }
  .brand{ display:flex; flex-direction:column; line-height:1.1; }
  .brand-main{font-size:23px;font-weight:800;background:linear-gradient(90deg,#6bb6ff,#2f80ff);background-clip:text;-webkit-background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
@@ -40,10 +43,18 @@
  .dots-menu{ position:absolute; right:16px; top:52px; background:#1e2f4a; border:1px solid #2a3650; border-radius:10px; padding:6px; width:160px; z-index:10; display:none; box-shadow:0 10px 30px rgba(0,0,0,0.5); }
  .dots-menu div{ padding:9px 10px; font-size:11px; cursor:pointer; border-radius:6px; color:#c2d1e8; }
  .dots-menu div:hover{ background:rgba(255,255,255,0.08); color:#fff; }
+ /* --- Responsive safe - design same --- */
+ @media (max-width:480px){
+   body{padding:10px;align-items:flex-start}
+   .card{padding:18px;border-radius:14px}
+   .title{font-size:22px}
+   .row-2{flex-direction:row}
+   #patientForm{width:100% !important;max-width:100% !important}
+ }
     </style>
 </head>
 <body>
-    <form action="/predict" method="POST" enctype="multipart/form-data" id="patientForm" style="width:420px;">
+    <form action="/predict" method="POST" enctype="multipart/form-data" id="patientForm" style="width:100%;max-width:420px;">
         <div class="card">
             <div class="topBar">
                 <div class="brand">
@@ -78,11 +89,8 @@
             <div id="fileNameShow" style="font-size:10px; color:#8a9bb5; margin-top:5px; display:none;"></div>
             <label>⏱️ Duration</label>
             <select id="duration" name="duration"><option>Less than 1 week</option><option>1-2 weeks</option><option>More than 2 weeks</option><option>Chronic</option></select>
-
-            <!-- FIXED: Added hidden lat/lon for app.py -->
             <input type="hidden" name="latitude" id="latField">
             <input type="hidden" name="longitude" id="lonField">
-
             <button class="predict-btn" type="submit">🤖 Predict</button>
             <div class="footer">AI-powered analysis • HIPAA compliant 🔒</div>
         </div>
@@ -100,19 +108,9 @@
 
     <div id="historyBox" class="overlay"><div style="background:#1c2740; border:1px solid #2a3650; border-radius:16px; width:95%; max-width:520px; max-height:85vh; overflow:hidden; display:flex; flex-direction:column;"><div style="padding:16px; border-bottom:1px solid #2a3650; display:flex; justify-content:space-between; align-items:center;"><b style="color:#fff; font-size:14px;">📜 History</b><button id="closeHistoryBtn" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button></div><div style="padding:12px;"><input type="text" id="historySearch" placeholder="🔍 Search patient..." style="width:100%; background:#2d3a55; border:1px solid #3a4a6b; border-radius:8px; padding:10px; color:#fff; font-size:11px; box-sizing:border-box;"></div><div id="historyList" style="overflow-y:auto; flex:1; padding:12px; background:#121a2b;"></div></div></div>
 
-    <div id="privacyModal" class="overlay"><div class="modal-card"><div class="modal-head"><b>🔒 Privacy Policy</b><button id="closePrivacy" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button></div><div class="modal-body">
-        <div style="background:rgba(107,182,255,0.15); border:1px solid #2a6bff; border-radius:8px; padding:8px; font-size:10px; text-align:center; color:#6ea8ff; margin-bottom:12px;">Last Updated: 08 Oct 2026 • HIPAA Compliant</div>
-        <p>At Predict AI Smart Disease System, we take your privacy seriously. We collect Patient Name, Age, Gender, Symptoms text, etc. All data is encrypted.</p>
-    </div></div></div>
-
-    <div id="termsModal" class="overlay"><div class="modal-card"><div class="modal-head"><b>📃 Terms & Conditions</b><button id="closeTerms" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button></div><div class="modal-body">
-        <h3>Medical Disclaimer</h3><p>Predictions are for informational purposes only. Always consult a qualified physician.</p>
-    </div></div></div>
-
-    <div id="faqModal" class="overlay"><div class="modal-card"><div class="modal-head"><b>❓ FAQ & Help Center</b><button id="closeFaq" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button></div><div class="modal-body">
-        <h3>🤖 How does Predict AI work?</h3><p>It matches your symptoms with 100+ diseases.</p>
-    </div></div></div>
-
+    <div id="privacyModal" class="overlay"><div class="modal-card"><div class="modal-head"><b>🔒 Privacy Policy</b><button id="closePrivacy" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button></div><div class="modal-body"><div style="background:rgba(107,182,255,0.15); border:1px solid #2a6bff; border-radius:8px; padding:8px; font-size:10px; text-align:center; color:#6ea8ff; margin-bottom:12px;">Last Updated: 08 Oct 2026 • HIPAA Compliant</div><p>At Predict AI Smart Disease System, we take your privacy seriously. We collect Patient Name, Age, Gender, Symptoms text, etc. All data is encrypted.</p></div></div></div>
+    <div id="termsModal" class="overlay"><div class="modal-card"><div class="modal-head"><b>📃 Terms & Conditions</b><button id="closeTerms" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button></div><div class="modal-body"><h3>Medical Disclaimer</h3><p>Predictions are for informational purposes only. Always consult a qualified physician.</p></div></div></div>
+    <div id="faqModal" class="overlay"><div class="modal-card"><div class="modal-head"><b>❓ FAQ & Help Center</b><button id="closeFaq" style="background:rgba(255,255,255,0.08); border:none; color:#fff; width:28px; height:28px; border-radius:50%; cursor:pointer;">✕</button></div><div class="modal-body"><h3>🤖 How does Predict AI work?</h3><p>It matches your symptoms with 100+ diseases.</p></div></div></div>
     <div id="logoutModal" class="overlay"><div class="choice-card"><h3 style="color:#fff; margin:0 0 10px 0;">🚪 Logout?</h3><p style="color:#8a9bb5; font-size:12px; margin-bottom:18px;">Are you sure you want to logout?</p><div style="display:flex; gap:10px;"><button id="cancelLogoutBtn" style="flex:1; padding:11px; background:#2d3a55; border:1px solid #3a4a6b; border-radius:10px; color:#fff; cursor:pointer;">Cancel</button><button id="confirmLogoutBtn" style="flex:1; padding:11px; background:#ff3b3b; border:none; border-radius:10px; color:#fff; cursor:pointer; font-weight:600;">Logout</button></div></div></div>
 
     <input type="file" id="cameraInput" name="report_file_camera" accept="image/*" capture="environment" style="display:none">
@@ -124,11 +122,9 @@ const privacyModal=document.getElementById('privacyModal'), termsModal=document.
 settingBtn.addEventListener('click', e=>{ e.stopPropagation(); menu.style.display=menu.style.display==='block'?'none':'block'; });
 document.addEventListener('click', ()=>{ menu.style.display='none'; });
 menu.addEventListener('click', e=>e.stopPropagation());
-
 document.getElementById('myProfileBtn').addEventListener('click', ()=>{ menu.style.display='none'; profileBox.style.display='flex'; });
 document.getElementById('closeProfileBtn').addEventListener('click', ()=>profileBox.style.display='none');
 profileBox.addEventListener('click', e=>{ if(e.target===profileBox) profileBox.style.display='none'; });
-
 function showLogoutModal(){ menu.style.display='none'; logoutModal.style.display='flex'; }
 function hideLogoutModal(){ logoutModal.style.display='none'; }
 function doLogout(){ localStorage.removeItem('login_user'); location.href='/login'; }
@@ -137,7 +133,6 @@ document.getElementById('profileLogoutBtn').addEventListener('click', showLogout
 document.getElementById('cancelLogoutBtn').addEventListener('click', hideLogoutModal);
 document.getElementById('confirmLogoutBtn').addEventListener('click', doLogout);
 logoutModal.addEventListener('click', e=>{ if(e.target===logoutModal) hideLogoutModal(); });
-
 document.getElementById('savePdfBtn').addEventListener('click', ()=>{ menu.style.display='none'; window.print(); });
 document.getElementById('privacyBtn').addEventListener('click', ()=>{ menu.style.display='none'; privacyModal.style.display='flex'; });
 document.getElementById('termsBtn').addEventListener('click', ()=>{ menu.style.display='none'; termsModal.style.display='flex'; });
@@ -145,13 +140,10 @@ document.getElementById('faqBtn').addEventListener('click', ()=>{ menu.style.dis
 document.getElementById('closePrivacy').addEventListener('click', ()=>privacyModal.style.display='none');
 document.getElementById('closeTerms').addEventListener('click', ()=>termsModal.style.display='none');
 document.getElementById('closeFaq').addEventListener('click', ()=>faqModal.style.display='none');
-
-// Camera
 document.getElementById('openCamChoice').addEventListener('click', ()=>document.getElementById('camChoiceBox').style.display='flex');
 document.getElementById('camCancelBtn').addEventListener('click', ()=>document.getElementById('camChoiceBox').style.display='none');
 document.getElementById('camOpenBtn').addEventListener('click', ()=>{ document.getElementById('camChoiceBox').style.display='none'; document.getElementById('cameraInput').click(); });
 document.getElementById('galleryOpenBtn').addEventListener('click', ()=>{ document.getElementById('camChoiceBox').style.display='none'; document.getElementById('galleryInput').click(); });
-
 function handleFile(input, type){
     if(input.files && input.files[0]){
         document.getElementById('fileNameShow').style.display='block';
@@ -161,19 +153,14 @@ function handleFile(input, type){
 }
 document.getElementById('cameraInput').addEventListener('change', function(){ handleFile(this, 'camera'); });
 document.getElementById('galleryInput').addEventListener('change', function(){ handleFile(this, 'gallery'); });
-
-// Geolocation fix
 if(navigator.geolocation){
     navigator.geolocation.getCurrentPosition(function(p){
         document.getElementById('latField').value = p.coords.latitude;
         document.getElementById('lonField').value = p.coords.longitude;
     });
 }
-
-// History + Form submit - FIXED
 document.getElementById('historyBtn').addEventListener('click', ()=>{ menu.style.display='none'; historyBox.style.display='flex'; });
 document.getElementById('closeHistoryBtn').addEventListener('click', ()=>historyBox.style.display='none');
-
 document.getElementById('patientForm').addEventListener('submit', function(e){
   let sym = document.getElementById('symText').value.trim();
   if(sym===""){
@@ -181,7 +168,6 @@ document.getElementById('patientForm').addEventListener('submit', function(e){
     e.preventDefault();
     return false;
   }
-  // Save to localStorage for history
   let all=JSON.parse(localStorage.getItem('all_patients')||'[]');
   all.unshift({
     name:document.getElementById('pname').value,
@@ -192,7 +178,6 @@ document.getElementById('patientForm').addEventListener('submit', function(e){
     date:new Date().toLocaleString()
   });
   localStorage.setItem('all_patients',JSON.stringify(all));
-  // Allow form to submit to /predict
 });
 </script>
 </body>

@@ -2,10 +2,13 @@
 <html>
 <head>
 <title>Welcome - Predict AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#f8f9ff">
+<link rel="manifest" href="/static/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;min-height:100vh;background:#f8f9ff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif;overflow:hidden}
-.card{width:380px;background:#ffffff;border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 12px 40px rgba(47,128,255,0.15);border:1px solid #eef2ff;animation:slideUp 0.6s ease}
+body{margin:0;min-height:100vh;background:#f8f9ff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif;overflow:hidden;padding:16px;box-sizing:border-box}
+.card{width:100%;max-width:380px;background:#ffffff;border-radius:24px;padding:36px 28px;text-align:center;box-shadow:0 12px 40px rgba(47,128,255,0.15);border:1px solid #eef2ff;animation:slideUp 0.6s ease;box-sizing:border-box}
 @keyframes slideUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 .icon-box{width:80px;height:80px;background:linear-gradient(135deg,#6bb6ff,#2f80ff);border-radius:20px;display:flex;justify-content:center;align-items:center;margin:0 auto 18px auto;box-shadow:0 8px 20px rgba(47,128,255,0.3);animation:pop 0.8s ease 0.3s both}
 @keyframes pop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
@@ -18,6 +21,13 @@ body{margin:0;min-height:100vh;background:#f8f9ff;display:flex;justify-content:c
 .continue-btn{width:100%;padding:14px;background:linear-gradient(90deg,#6bb6ff,#2f80ff);border:none;border-radius:12px;color:white;font-weight:600;font-size:14px;cursor:pointer;box-shadow:0 6px 18px rgba(47,128,255,0.3);transition:0.2s}
 .continue-btn:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(47,128,255,0.4)}
 .user-name{font-size:12px;color:#2f80ff;font-weight:600;margin-top:14px}
+/* Design change 0% - bas mobile pe fit */
+@media (max-width:400px){
+  .card{padding:28px 20px;border-radius:20px}
+  .main-heading{font-size:20px}
+  .icon-box{width:68px;height:68px}
+  .icon-box span{font-size:36px}
+}
 </style>
 </head>
 <body>
@@ -31,7 +41,6 @@ body{margin:0;min-height:100vh;background:#f8f9ff;display:flex;justify-content:c
   <p class="user-name">Hi, {{ user }} 👋</p>
 </div>
 <script>
-// Confetti - No auto redirect, only button click
 let colors = ['#2f80ff','#6bb6ff','#e6f7ec'];
 for(let i=0;i<30;i++){
   let c = document.createElement('div');

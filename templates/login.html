@@ -2,10 +2,13 @@
 <html>
 <head>
 <title>Login - Predict AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<meta name="theme-color" content="#ffffff">
+<link rel="manifest" href="/static/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif}
-.card{width:360px;background:#ffffff;border-radius:20px;padding:28px 26px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #f0f0f0}
+body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif;padding:16px;box-sizing:border-box}
+.card{width:100%;max-width:360px;background:#ffffff;border-radius:20px;padding:28px 26px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #f0f0f0;box-sizing:border-box}
 .logo-wrap{text-align:center;margin-bottom:22px}
 .logo-icon{font-size:42px;color:#2f80ff;line-height:1;margin-bottom:6px;display:inline-block;filter:drop-shadow(0 4px 8px rgba(47,128,255,0.25))}
 .logo-title{font-size:26px;font-weight:800;color:#121a2b;letter-spacing:0.5px;margin:0;line-height:1.1}
@@ -22,10 +25,16 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 #error,#error2{color:#ff3b3b;font-size:11px;text-align:center;margin-top:10px;min-height:14px}
 .demo-note{font-size:11px;color:#2f80ff;background:#eef5ff;padding:6px 10px;border-radius:8px;text-align:center;margin-bottom:10px;font-weight:600;display:none}
 .hidden-otp{position:absolute;opacity:0;pointer-events:none;height:0;width:0;}
+/* Mobile safe - design change nahi */
+@media (max-width:400px){
+  .card{padding:22px 18px;border-radius:16px}
+  .otp-box{width:36px;height:42px;font-size:16px}
+  .logo-title{font-size:22px}
+}
 </style>
 </head>
 <body>
-
+<!-- Tera baaki ka body same to same -->
 <div class="card" id="emailCard">
   <div class="logo-wrap">
     <div class="logo-icon">⌬</div>
@@ -81,16 +90,13 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
   </form>
   <p class="login-link" id="goToEmail">← Back to Email Login</p>
 </div>
-
 <script>
 let otpSentEmail = false;
 let otpSentPhone = false;
 let tempUser = {};
-let currentPhoneOtp = ""; // Har bar alag OTP
-
+let currentPhoneOtp = "";
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
-
 function otpAutoJump(boxes){
   boxes.forEach((b,i)=>{
     b.addEventListener('input', ()=>{ if(b.value && i<boxes.length-1) boxes[i+1].focus(); });
@@ -101,16 +107,12 @@ const emailBoxes = document.querySelectorAll('#otpArea .otp-box');
 const phoneBoxes = document.querySelectorAll('#otpArea2 .otp-box');
 otpAutoJump(emailBoxes); 
 otpAutoJump(phoneBoxes);
-
 function autoFillOtp(boxes, otpStr){
   if(!otpStr) return;
   otpStr = otpStr.toString().replace(/\D/g,'').slice(0,6);
   boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
-
-// Har user ke liye alag random OTP - 5-6 types nahi, har bar new
 function generateRandomPhoneOtp(){
-  // Teri example wali list me se bhi lega + random bhi
   const fixedList = ["875093","462819","903741","128475","569032","714628"];
   if(Math.random() < 0.5){
     return fixedList[Math.floor(Math.random()*fixedList.length)];
@@ -118,8 +120,6 @@ function generateRandomPhoneOtp(){
     return Math.floor(100000 + Math.random()*900000).toString();
   }
 }
-
-// EMAIL LOGIN - REAL GMAIL OTP JAYEGA
 document.getElementById('emailForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=document.getElementById('username').value.trim(); 
@@ -160,8 +160,6 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
     else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; document.getElementById('mainBtn').innerText="Verify & Login"; }
   }
 });
-
-// PHONE LOGIN - RANDOM OTP AUTOFILL
 document.getElementById('phoneForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=document.getElementById('p_username').value.trim(); 
