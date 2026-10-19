@@ -251,34 +251,88 @@ def api_verify_login():
 
 @app.route('/predict', methods=['POST'])
 def predict_route():
-    raw=request.form.get('symptoms') or request.form.get('symptoms_text') or ""
-    if not raw.strip(): return redirect(url_for('pp_page'))
-    cleaned=parse_symptoms(str(raw), all_symptoms)
-    scores=[]
+    raw = request.form.get('symptoms') or request.form.get('symptoms_text') or ""
+    if not raw.strip():
+        return redirect(url_for('pp_page'))
+    
+    cleaned = parse_symptoms(str(raw), all_symptoms)
+    # cleaned = ['itching', 'rash', 'fever'] aise ayega
+    
+    scores = []
     for dname, info in diseases_data.items():
-        full_text=info.get('Symptoms','').lower() if isinstance(info, dict) else str(info).lower()
-        full=[s.lower().strip() for s in re.split(r'\d+\.|,|;', full_text) if s.strip()]
-        km=len(set(cleaned)&set(full))
-        if km>0: scores.append((dname,km,info))
-    scores.sort(key=lambda x:x[1], reverse=True)
+        if not isinstance(info, dict):
+            continue
+        
+        sym_raw = info.get('Symptoms') or info.get('symptoms') or ""
+        full_text = str(sym_raw).lower()
+        
+        # Score: har cleaned symptom full_text me hai kya?
+        km = 0
+        matched_syms = []
+        for c in cleaned:
+            # 'itching' -> 'itching' in full_text?
+            # 'abdominal pain' -> 'abdominal pain' in full_text?
+            if c.lower() in full_text:
+                km += 1
+                matched_syms.append(c)
+            else:
+                # ek aur check - har word alag alag
+                # 'red patches' -> red and patches dono ho to bhi count
+                words = c.lower().split()
+                if len(words) > 1 and all(w in full_text for w in words if len(w) > 2):
+                    km += 0.8
+        
+        if km > 0:
+            scores.append((dname, km, info, matched_syms))
+    
+    # Sort by max matched
+    scores.sort(key=lambda x: x[1], reverse=True)
+    print(f"Input: {raw} -> Cleaned: {cleaned}")
+    print(f"Top 3: {[(s[0], s[1]) for s in scores[:3]]}")
+
     if scores:
-        dname=scores[0][0]; dinfo=scores[0][2]; conf=min(96, max(40, scores[0][1]*10+45))
+        dname = scores[0][0]
+        dinfo = scores[0][2]
+        matched_count = scores[0][1]
+        total_input = len(cleaned)
+        # Confidence: kitne symptoms match hue / kitne dale
+        conf = (matched_count / total_input) * 85 + 10
+        conf = min(96, max(55, conf))
     else:
-        dname=list(diseases_data.keys())[0] if diseases_data else "Analysis Needed"
-        dinfo=diseases_data.get(dname,{}) if diseases_data else {}; conf=35
-    lab=dinfo.get('Lab_Tests') or ["CBC"] if isinstance(dinfo, dict) else ["CBC"]
-    if isinstance(lab,str): lab=[s.strip() for s in re.split(r',|;', lab) if s.strip()]
-    result={'disease':dname,'confidence':round(float(conf),2),'description':dinfo.get('Description','') if isinstance(dinfo, dict) else '','diet':dinfo.get('Diet','Balanced diet') if isinstance(dinfo, dict) else 'Balanced diet','exercise':dinfo.get('Exercise','Light walk') if isinstance(dinfo, dict) else 'Light walk','precaution':dinfo.get('Precautions','Consult doctor') if isinstance(dinfo, dict) else 'Consult doctor','lab_tests':lab,'doctor':dinfo.get('Specialist','General Physician') if isinstance(dinfo, dict) else 'General Physician','symptoms':", ".join(cleaned),'original_input':raw,'patient_name':request.form.get('patient_name') or session.get('username','Patient'),'age':request.form.get('age') or "N/A",'gender':request.form.get('gender') or "N/A",'duration':request.form.get('duration') or "N/A",'date':datetime.now().strftime("%d-%m-%Y %H:%M")}
-    session['last_result']=result
-    conn=get_db_connection()
-    if conn:
-        try:
-            cur=conn.cursor()
-            cur.execute("INSERT INTO predictions (user_id,symptoms,predicted_disease,confidence,original_input,patient_name,age,gender,duration) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (session.get('user_id',0), result['symptoms'], result['disease'], result['confidence'], result['original_input'], result['patient_name'], str(result['age']), str(result['gender']), str(result['duration'])))
-            conn.commit()
-            cur.close()
-            conn.close()
-        except Exception as e: print(f"DB save error {e}")
+        dname = "No Exact Match - General Checkup"
+        dinfo = {
+            "Description": "Your symptoms did not strongly match one disease. Please consult.",
+            "Diet": "Balanced diet, 2-3L water",
+            "Exercise": "30 min walk",
+            "Precautions": "Consult doctor, keep hygiene",
+            "Lab_Tests": ["CBC", "General Checkup"],
+            "Specialist": "General Physician"
+        }
+        conf = 40
+
+    lab = dinfo.get('Lab_Tests') or ["CBC"]
+    if isinstance(lab, str):
+        lab = [s.strip() for s in re.split(r',|;', lab) if s.strip()]
+
+    result = {
+        'disease': dname,
+        'confidence': round(float(conf), 2),
+        'description': dinfo.get('Description', ''),
+        'diet': dinfo.get('Diet', 'Balanced diet'),
+        'exercise': dinfo.get('Exercise', 'Light walk'),
+        'precaution': dinfo.get('Precautions', 'Consult doctor'),
+        'lab_tests': lab,
+        'doctor': dinfo.get('Specialist', 'General Physician'),
+        'symptoms': ", ".join(cleaned),
+        'original_input': raw,
+        'patient_name': request.form.get('patient_name') or session.get('username', 'Patient'),
+        'age': request.form.get('age') or "N/A",
+        'gender': request.form.get('gender') or "N/A",
+        'duration': request.form.get('duration') or "N/A",
+        'date': datetime.now().strftime("%d-%m-%Y %H:%M"),
+        'is_emergency': False
+    }
+    session['last_result'] = result
     return redirect(url_for('result_page'))
 
 @app.route('/api/download_pdf')
