@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file, send_from_directory
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file, send_from_directory, Response
 import json, pickle, gzip, os, re, difflib, random, smtplib, io
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -33,7 +33,13 @@ def google_verify_file():
 
 @app.route('/sitemap.xml')
 def sitemap():
-    return send_from_directory('static', 'sitemap.xml')
+    xml = '''<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://smart-disease-system.vercel.app/</loc></url>
+  <url><loc>https://smart-disease-system.vercel.app/login</loc></url>
+  <url><loc>https://smart-disease-system.vercel.app/welcome</loc></url>
+</urlset>'''
+    return Response(xml, mimetype='application/xml')
 
 # --- END PWA ROUTES ---
 
