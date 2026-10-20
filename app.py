@@ -8,9 +8,12 @@ from mysql.connector import Error
 
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['SESSION_COOKIE_MAX_AGE'] = 315360000
 
-# --- PWA ROUTES FOR GOOGLE ---
 @app.route('/manifest.json')
 def manifest():
     return send_from_directory('static', 'manifest.json')
@@ -41,8 +44,6 @@ def sitemap():
 </urlset>'''
     return Response(xml, mimetype='application/xml')
 
-# --- END PWA ROUTES ---
-
 MAIL_USER = os.getenv('MAIL_USER', '')
 MAIL_PASS = os.getenv('MAIL_PASS', '')
 
@@ -66,6 +67,9 @@ def send_email_otp(to_email, otp):
         print(f"Email fail {e}")
         return False
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CA_PATH = os.path.join(BASE_DIR, "ca.pem")
+
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', 'mysql-3208d2d3-mirzanazeerbaig8087-2b5f.i.aivencloud.com'),
     'port': int(os.getenv('DB_PORT', 12408)),
@@ -75,14 +79,33 @@ DB_CONFIG = {
     'autocommit': True,
     'connection_timeout': 10
 }
+
 def get_db_connection():
     try:
-        return mysql.connector.connect(host=DB_CONFIG['host'], port=DB_CONFIG['port'], user=DB_CONFIG['user'], password=DB_CONFIG['password'], database=DB_CONFIG['database'], ssl_disabled=False)
+        if os.path.exists(CA_PATH):
+            print(f"Using CA cert: {CA_PATH}")
+            return mysql.connector.connect(
+                host=DB_CONFIG['host'], 
+                port=DB_CONFIG['port'], 
+                user=DB_CONFIG['user'], 
+                password=DB_CONFIG['password'], 
+                database=DB_CONFIG['database'],
+                ssl_ca=CA_PATH,
+                ssl_verify_cert=True
+            )
+        else:
+            print("CA not found, trying without SSL file")
+            return mysql.connector.connect(
+                host=DB_CONFIG['host'], 
+                port=DB_CONFIG['port'], 
+                user=DB_CONFIG['user'], 
+                password=DB_CONFIG['password'], 
+                database=DB_CONFIG['database']
+            )
     except Error as e:
         print(f"DB Error {e}")
         return None
 
-# ==================== 1000+ TRANSLATOR ====================
 def build_translator():
     base = {
         "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","halka bukhar","bukhar thand","bukhar khansi","thand ke sath bukhar","kapkapahat","thand lagna"],
@@ -155,7 +178,6 @@ def parse_symptoms(raw, all_sym):
             if len(s)>2: cleaned.append(normalize(s, all_sym))
     return list(dict.fromkeys(cleaned))
 
-# ==================== DISEASES.JSON SE PAKKA LOAD ====================
 model=vectorizer=label_encoder=None
 diseases_data={}
 all_symptoms=[]
@@ -314,10 +336,12 @@ def api_verify_login():
         email=data.get('email','').strip(); otp=str(data.get('otp','')).strip()
         stored=otp_store.get(email)
         if (stored and stored['otp']==otp and datetime.now()-stored['time']<timedelta(minutes=10)) or otp=="123456":
-            session['is_logged_in']=True; 
-            session['user_id']=random.randint(1000,9999); 
-            session['username']=data.get('username','User'); 
+            session['is_logged_in']=True
+            session.permanent = True
+            session['user_id']=random.randint(1000,9999)
+            session['username']=data.get('username','User')
             session['has_seen_welcome']=False
+            session['login_time']=datetime.now().isoformat()
             if conn and cur:
                 try:
                     cur.execute("INSERT INTO users (username, email, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), email, datetime.now()))
@@ -337,10 +361,12 @@ def api_verify_login():
     elif data.get('type')=='phone':
         phone=data.get('phone','').strip(); otp=str(data.get('otp','')).strip()
         if len(otp)==6 and otp.isdigit():
-            session['is_logged_in']=True; 
-            session['user_id']=random.randint(1000,9999); 
-            session['username']=data.get('username','User'); 
+            session['is_logged_in']=True
+            session.permanent = True
+            session['user_id']=random.randint(1000,9999)
+            session['username']=data.get('username','User')
             session['has_seen_welcome']=False
+            session['login_time']=datetime.now().isoformat()
             if conn and cur:
                 try:
                     cur.execute("INSERT INTO users (username, phone, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), phone, datetime.now()))
@@ -356,6 +382,7 @@ def api_verify_login():
     
     if conn and cur: cur.close(); conn.close()
     return jsonify({'status':'error'}),400
+
 @app.route('/predict', methods=['POST'])
 def predict_route():
     raw = request.form.get('symptoms') or request.form.get('symptoms_text') or ""
@@ -414,7 +441,6 @@ def predict_route():
         'is_emergency': False
     }
 
-    # ---- DB ME RESULT SAVE ----
     conn2 = get_db_connection()
     if conn2:
         try:
