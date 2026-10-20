@@ -31,6 +31,10 @@ def icon512():
 def google_verify_file():
     return send_from_directory('.', 'google601d496139b65d67.html')
 
+@app.route('/sitemap.xml')
+def sitemap():
+    return send_from_directory('static', 'sitemap.xml')
+
 # --- END PWA ROUTES ---
 
 MAIL_USER = os.getenv('MAIL_USER', '')
