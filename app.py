@@ -238,6 +238,15 @@ def thankyou_page():
 
 @app.route('/logout')
 def logout(): 
+    conn = get_db_connection()
+    if conn and session.get('user_db_id'):
+        try:
+            cur = conn.cursor()
+            cur.execute("UPDATE users SET logout_time=%s WHERE id=%s", (datetime.now(), session.get('user_db_id')))
+            conn.commit()
+            cur.close()
+        except: pass
+        conn.close()
     session.clear()
     return redirect(url_for('cover'))
 
@@ -266,7 +275,6 @@ def api_send_phone_otp():
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
     data=request.get_json() or {}
-    # DB Table Auto Create
     conn = get_db_connection()
     cur = None
     if conn:
@@ -278,7 +286,24 @@ def api_verify_login():
                     username VARCHAR(255),
                     email VARCHAR(255),
                     phone VARCHAR(20),
-                    login_time DATETIME
+                    login_time DATETIME,
+                    logout_time DATETIME
+                )
+            """)
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS predictions (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT,
+                    username VARCHAR(255),
+                    patient_name VARCHAR(255),
+                    age VARCHAR(20),
+                    gender VARCHAR(20),
+                    symptoms_input TEXT,
+                    symptoms_cleaned TEXT,
+                    disease VARCHAR(255),
+                    confidence FLOAT,
+                    doctor VARCHAR(255),
+                    created_at DATETIME
                 )
             """)
             conn.commit()
@@ -289,29 +314,38 @@ def api_verify_login():
         email=data.get('email','').strip(); otp=str(data.get('otp','')).strip()
         stored=otp_store.get(email)
         if (stored and stored['otp']==otp and datetime.now()-stored['time']<timedelta(minutes=10)) or otp=="123456":
-            session['is_logged_in']=True; session['user_id']=random.randint(1000,9999); session['username']=data.get('username','User'); session['has_seen_welcome']=False
+            session['is_logged_in']=True; 
+            session['user_id']=random.randint(1000,9999); 
+            session['username']=data.get('username','User'); 
+            session['has_seen_welcome']=False
             if conn and cur:
                 try:
                     cur.execute("INSERT INTO users (username, email, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), email, datetime.now()))
                     conn.commit()
-                    print(f"Saved user {email}")
+                    session['user_db_id'] = cur.lastrowid
+                    print(f"Saved user {email} id {session['user_db_id']}")
                 except Exception as e:
                     print(f"DB Save fail {e}")
                 finally:
                     cur.close(); conn.close()
             otp_store.pop(email,None)
             return jsonify({'status':'success'})
-        if conn and cur: cur.close(); conn.close()
+        if conn and cur: 
+            cur.close(); conn.close()
         return jsonify({'status':'error','message':'Invalid OTP'}),400
+
     elif data.get('type')=='phone':
         phone=data.get('phone','').strip(); otp=str(data.get('otp','')).strip()
         if len(otp)==6 and otp.isdigit():
-            session['is_logged_in']=True; session['user_id']=random.randint(1000,9999); session['username']=data.get('username','User'); session['has_seen_welcome']=False
+            session['is_logged_in']=True; 
+            session['user_id']=random.randint(1000,9999); 
+            session['username']=data.get('username','User'); 
+            session['has_seen_welcome']=False
             if conn and cur:
                 try:
                     cur.execute("INSERT INTO users (username, phone, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), phone, datetime.now()))
                     conn.commit()
-                    print(f"Saved user {phone}")
+                    session['user_db_id'] = cur.lastrowid
                 except Exception as e:
                     print(f"DB Save fail {e}")
                 finally:
@@ -319,9 +353,9 @@ def api_verify_login():
             return jsonify({'status':'success'})
         if conn and cur: cur.close(); conn.close()
         return jsonify({'status':'error'}),400
+    
     if conn and cur: cur.close(); conn.close()
     return jsonify({'status':'error'}),400
-
 @app.route('/predict', methods=['POST'])
 def predict_route():
     raw = request.form.get('symptoms') or request.form.get('symptoms_text') or ""
@@ -329,63 +363,37 @@ def predict_route():
         return redirect(url_for('pp_page'))
     
     cleaned = parse_symptoms(str(raw), all_symptoms)
-    # cleaned = ['itching', 'rash', 'fever'] aise ayega
-    
     scores = []
     for dname, info in diseases_data.items():
-        if not isinstance(info, dict):
-            continue
-        
+        if not isinstance(info, dict): continue
         sym_raw = info.get('Symptoms') or info.get('symptoms') or ""
         full_text = str(sym_raw).lower()
-        
-        # Score: har cleaned symptom full_text me hai kya?
         km = 0
-        matched_syms = []
         for c in cleaned:
-            # 'itching' -> 'itching' in full_text?
-            # 'abdominal pain' -> 'abdominal pain' in full_text?
             if c.lower() in full_text:
                 km += 1
-                matched_syms.append(c)
             else:
-                # ek aur check - har word alag alag
-                # 'red patches' -> red and patches dono ho to bhi count
                 words = c.lower().split()
                 if len(words) > 1 and all(w in full_text for w in words if len(w) > 2):
                     km += 0.8
-        
         if km > 0:
-            scores.append((dname, km, info, matched_syms))
+            scores.append((dname, km, info))
     
-    # Sort by max matched
     scores.sort(key=lambda x: x[1], reverse=True)
-    print(f"Input: {raw} -> Cleaned: {cleaned}")
-    print(f"Top 3: {[(s[0], s[1]) for s in scores[:3]]}")
-
     if scores:
         dname = scores[0][0]
         dinfo = scores[0][2]
         matched_count = scores[0][1]
-        total_input = len(cleaned)
-        # Confidence: kitne symptoms match hue / kitne dale
+        total_input = len(cleaned) if cleaned else 1
         conf = (matched_count / total_input) * 85 + 10
         conf = min(96, max(55, conf))
     else:
         dname = "No Exact Match - General Checkup"
-        dinfo = {
-            "Description": "Your symptoms did not strongly match one disease. Please consult.",
-            "Diet": "Balanced diet, 2-3L water",
-            "Exercise": "30 min walk",
-            "Precautions": "Consult doctor, keep hygiene",
-            "Lab_Tests": ["CBC", "General Checkup"],
-            "Specialist": "General Physician"
-        }
+        dinfo = {"Description": "Symptoms not strongly matched.", "Diet": "Balanced diet", "Exercise": "30 min walk", "Precautions": "Consult doctor", "Lab_Tests": ["CBC"], "Specialist": "General Physician"}
         conf = 40
 
     lab = dinfo.get('Lab_Tests') or ["CBC"]
-    if isinstance(lab, str):
-        lab = [s.strip() for s in re.split(r',|;', lab) if s.strip()]
+    if isinstance(lab, str): lab = [s.strip() for s in re.split(r',|;', lab) if s.strip()]
 
     result = {
         'disease': dname,
@@ -405,6 +413,22 @@ def predict_route():
         'date': datetime.now().strftime("%d-%m-%Y %H:%M"),
         'is_emergency': False
     }
+
+    # ---- DB ME RESULT SAVE ----
+    conn2 = get_db_connection()
+    if conn2:
+        try:
+            cur2 = conn2.cursor()
+            cur2.execute("""
+                INSERT INTO predictions (user_id, username, patient_name, age, gender, symptoms_input, symptoms_cleaned, disease, confidence, doctor, created_at)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+            """, (session.get('user_db_id'), session.get('username'), result['patient_name'], result['age'], result['gender'], raw, result['symptoms'], dname, float(conf), result['doctor'], datetime.now()))
+            conn2.commit()
+            cur2.close()
+        except Exception as e:
+            print(f"Pred save fail {e}")
+        conn2.close()
+
     session['last_result'] = result
     return redirect(url_for('result_page'))
 
