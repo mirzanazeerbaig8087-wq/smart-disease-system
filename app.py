@@ -10,7 +10,7 @@ app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650)
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_SECURE'] = True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_MAX_AGE'] = 315360000
 
@@ -257,6 +257,10 @@ def thankyou_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     r=session.get('last_result',{})
     return render_template('thankyou.html', result=r, username=session.get('username','User'))
+
+@app.route('/debug/session')
+def debug_session():
+    return jsonify(dict(session))
 
 @app.route('/logout')
 def logout(): 
