@@ -26,6 +26,11 @@ def icon192():
 @app.route('/icon-512.png')
 def icon512():
     return send_from_directory('static', 'icon-512.png')
+
+@app.route('/google601d496139b65d67.html')
+def google_verify_file():
+    return send_from_directory('.', 'google601d496139b65d67.html')
+
 # --- END PWA ROUTES ---
 
 MAIL_USER = os.getenv('MAIL_USER', '')
