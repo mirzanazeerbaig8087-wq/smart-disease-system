@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file, send_from_directory
 import json, pickle, gzip, os, re, difflib, random, smtplib, io
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
@@ -9,6 +9,24 @@ from mysql.connector import Error
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+
+# --- PWA ROUTES FOR GOOGLE ---
+@app.route('/manifest.json')
+def manifest():
+    return send_from_directory('static', 'manifest.json')
+
+@app.route('/sw.js')
+def sw():
+    return send_from_directory('static', 'sw.js')
+
+@app.route('/icon-192.png')
+def icon192():
+    return send_from_directory('static', 'icon-192.png')
+
+@app.route('/icon-512.png')
+def icon512():
+    return send_from_directory('static', 'icon-512.png')
+# --- END PWA ROUTES ---
 
 MAIL_USER = os.getenv('MAIL_USER', '')
 MAIL_PASS = os.getenv('MAIL_PASS', '')
@@ -233,20 +251,60 @@ def api_send_phone_otp():
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
     data=request.get_json() or {}
+    # DB Table Auto Create
+    conn = get_db_connection()
+    cur = None
+    if conn:
+        try:
+            cur = conn.cursor()
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    username VARCHAR(255),
+                    email VARCHAR(255),
+                    phone VARCHAR(20),
+                    login_time DATETIME
+                )
+            """)
+            conn.commit()
+        except Exception as e:
+            print(f"Table create fail: {e}")
+
     if data.get('type')=='email':
         email=data.get('email','').strip(); otp=str(data.get('otp','')).strip()
         stored=otp_store.get(email)
         if (stored and stored['otp']==otp and datetime.now()-stored['time']<timedelta(minutes=10)) or otp=="123456":
             session['is_logged_in']=True; session['user_id']=random.randint(1000,9999); session['username']=data.get('username','User'); session['has_seen_welcome']=False
+            if conn and cur:
+                try:
+                    cur.execute("INSERT INTO users (username, email, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), email, datetime.now()))
+                    conn.commit()
+                    print(f"Saved user {email}")
+                except Exception as e:
+                    print(f"DB Save fail {e}")
+                finally:
+                    cur.close(); conn.close()
             otp_store.pop(email,None)
             return jsonify({'status':'success'})
+        if conn and cur: cur.close(); conn.close()
         return jsonify({'status':'error','message':'Invalid OTP'}),400
     elif data.get('type')=='phone':
-        otp=str(data.get('otp','')).strip()
+        phone=data.get('phone','').strip(); otp=str(data.get('otp','')).strip()
         if len(otp)==6 and otp.isdigit():
             session['is_logged_in']=True; session['user_id']=random.randint(1000,9999); session['username']=data.get('username','User'); session['has_seen_welcome']=False
+            if conn and cur:
+                try:
+                    cur.execute("INSERT INTO users (username, phone, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), phone, datetime.now()))
+                    conn.commit()
+                    print(f"Saved user {phone}")
+                except Exception as e:
+                    print(f"DB Save fail {e}")
+                finally:
+                    cur.close(); conn.close()
             return jsonify({'status':'success'})
+        if conn and cur: cur.close(); conn.close()
         return jsonify({'status':'error'}),400
+    if conn and cur: cur.close(); conn.close()
     return jsonify({'status':'error'}),400
 
 @app.route('/predict', methods=['POST'])
