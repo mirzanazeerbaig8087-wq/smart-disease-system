@@ -219,6 +219,8 @@ temp_users = {}
 @app.route('/')
 @app.route('/cover')
 def cover():
+    if session.get('is_logged_in'):
+        return redirect(url_for('pp_page'))
     return render_template('cover.html')
 
 @app.route('/login')
