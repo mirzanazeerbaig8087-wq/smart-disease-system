@@ -1,6 +1,6 @@
 {
-  "name": "Predict AI - Smart Disease Prediction",
-  "short_name": "Predict AI",
+  "name": "Predict AI - Smart Disease system",
+  "short_name": "predict AI",
   "description": "AI based disease prediction system",
   "start_url": "/",
   "display": "standalone",
