@@ -8,104 +8,48 @@ from mysql.connector import Error
 
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
+app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = True
+app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_MAX_AGE'] = 315360000
+app.config['SESSION_COOKIE_NAME'] = 'smart_session'
 
 @app.route('/manifest.json')
-def manifest():
-    return send_from_directory('static', 'manifest.json')
-
+def manifest(): return send_from_directory('static', 'manifest.json')
 @app.route('/sw.js')
-def sw():
-    return send_from_directory('static', 'sw.js')
-
+def sw(): return send_from_directory('static', 'sw.js')
 @app.route('/icon-192.png')
-def icon192():
-    return send_from_directory('static', 'icon-192.png')
-
+def icon192(): return send_from_directory('static', 'icon-192.png')
 @app.route('/icon-512.png')
-def icon512():
-    return send_from_directory('static', 'icon-512.png')
-
+def icon512(): return send_from_directory('static', 'icon-512.png')
 @app.route('/google601d496139b65d67.html')
-def google_verify_file():
-    return send_from_directory('.', 'google601d496139b65d67.html')
-
+def google_verify_file(): return send_from_directory('.', 'google601d496139b65d67.html')
 @app.route('/sitemap.xml')
 def sitemap():
-    xml = '''<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://smart-disease-system.vercel.app/</loc></url>
-  <url><loc>https://smart-disease-system.vercel.app/login</loc></url>
-  <url><loc>https://smart-disease-system.vercel.app/welcome</loc></url>
-</urlset>'''
+    xml = '''<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://smart-disease-system.vercel.app/</loc></url></urlset>'''
     return Response(xml, mimetype='application/xml')
-
-MAIL_USER = os.getenv('MAIL_USER', '')
-MAIL_PASS = os.getenv('MAIL_PASS', '')
-
-def send_email_otp(to_email, otp):
-    if not MAIL_USER:
-        print(f"[DEMO] OTP {otp} for {to_email}")
-        return False
-    try:
-        msg = MIMEMultipart()
-        msg['From'] = MAIL_USER
-        msg['To'] = to_email
-        msg['Subject'] = f"Predict AI - OTP {otp}"
-        msg.attach(MIMEText(f"<h1>{otp}</h1><p>Valid 5 mins</p>", 'html'))
-        server = smtplib.SMTP('smtp.gmail.com', 587)
-        server.starttls()
-        server.login(MAIL_USER, MAIL_PASS.replace(" ",""))
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print(f"Email fail {e}")
-        return False
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CA_PATH = os.path.join(BASE_DIR, "ca.pem")
-
 DB_CONFIG = {
     'host': os.getenv('DB_HOST', 'mysql-3208d2d3-mirzanazeerbaig8087-2b5f.i.aivencloud.com'),
     'port': int(os.getenv('DB_PORT', 12408)),
     'user': os.getenv('DB_USER', 'avnadmin'),
     'password': os.getenv('DB_PASS'),
     'database': os.getenv('DB_NAME', 'defaultdb'),
-    'autocommit': True,
-    'connection_timeout': 10
+    'autocommit': True, 'connection_timeout': 10
 }
-
 def get_db_connection():
     try:
         if os.path.exists(CA_PATH):
-            print(f"Using CA cert: {CA_PATH}")
-            return mysql.connector.connect(
-                host=DB_CONFIG['host'], 
-                port=DB_CONFIG['port'], 
-                user=DB_CONFIG['user'], 
-                password=DB_CONFIG['password'], 
-                database=DB_CONFIG['database'],
-                ssl_ca=CA_PATH,
-                ssl_verify_cert=True
-            )
+            return mysql.connector.connect(host=DB_CONFIG['host'], port=DB_CONFIG['port'], user=DB_CONFIG['user'], password=DB_CONFIG['password'], database=DB_CONFIG['database'], ssl_ca=CA_PATH, ssl_verify_cert=True)
         else:
-            print("CA not found, trying without SSL file")
-            return mysql.connector.connect(
-                host=DB_CONFIG['host'], 
-                port=DB_CONFIG['port'], 
-                user=DB_CONFIG['user'], 
-                password=DB_CONFIG['password'], 
-                database=DB_CONFIG['database']
-            )
+            return mysql.connector.connect(host=DB_CONFIG['host'], port=DB_CONFIG['port'], user=DB_CONFIG['user'], password=DB_CONFIG['password'], database=DB_CONFIG['database'])
     except Error as e:
-        print(f"DB Error {e}")
-        return None
+        print(f"DB Error {e}"); return None
 
+# --- TERA PURA TRANSLATOR MAP ---
 def build_translator():
     base = {
         "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","halka bukhar","bukhar thand","bukhar khansi","thand ke sath bukhar","kapkapahat","thand lagna"],
@@ -158,11 +102,9 @@ def normalize(text, all_sym):
     t = text.lower().strip()
     t = re.sub(r'[^a-z0-9 ]', ' ', t)
     t = re.sub(r'\s+', ' ', t).strip()
-    if t in TRANSLATION_MAP:
-        return TRANSLATION_MAP[t]
+    if t in TRANSLATION_MAP: return TRANSLATION_MAP[t]
     for hi,en in TRANSLATION_MAP.items():
-        if hi in t or t in hi:
-            return en
+        if hi in t or t in hi: return en
     if all_sym:
         m = difflib.get_close_matches(t, all_sym, n=1, cutoff=0.6)
         if m: return m[0]
@@ -178,307 +120,103 @@ def parse_symptoms(raw, all_sym):
             if len(s)>2: cleaned.append(normalize(s, all_sym))
     return list(dict.fromkeys(cleaned))
 
-model=vectorizer=label_encoder=None
-diseases_data={}
-all_symptoms=[]
+diseases_data={}; all_symptoms=[]
 try:
     d=None
     if os.path.exists('model.pkl.gz'):
         with gzip.open('model.pkl.gz','rb') as f: d=pickle.load(f)
     elif os.path.exists('model.pkl'):
         with open('model.pkl','rb') as f: d=pickle.load(f)
-    if d and isinstance(d, dict):
-        diseases_data = d.get('diseases_data') or d.get('disease_data') or d.get('diseases') or {}
+    if d and isinstance(d, dict): diseases_data = d.get('diseases_data') or {}
     if not diseases_data and os.path.exists('disease_info.pkl'):
         with open('disease_info.pkl','rb') as f: diseases_data=pickle.load(f)
-    for fname in ['diseases.json', 'disease.json', 'DISEASE.json', 'disease_data.json']:
+    for fname in ['diseases.json', 'disease.json']:
         if os.path.exists(fname):
-            try:
-                with open(fname,'r',encoding='utf-8') as f:
-                    loaded=json.load(f)
-                    if loaded and len(loaded) > len(diseases_data):
-                        diseases_data = loaded
-                        print(f"LOADED FROM {fname} - {len(diseases_data)} diseases")
-                        break
-                    elif loaded and not diseases_data:
-                        diseases_data = loaded
-                        print(f"LOADED FROM {fname} - {len(diseases_data)} diseases")
-                        break
-            except Exception as je:
-                print(f"Failed {fname}: {je}")
+            with open(fname,'r',encoding='utf-8') as f:
+                loaded=json.load(f)
+                if loaded: diseases_data = loaded; break
     if os.path.exists('symptoms.pkl'):
         with open('symptoms.pkl','rb') as f: all_symptoms=pickle.load(f)
     print(f"FINAL diseases_data count: {len(diseases_data)}")
-except Exception as e:
-    print(f"Load error {e}")
-    import traceback; traceback.print_exc()
+except Exception as e: print(f"Load error {e}")
 
 otp_store = {}
-temp_users = {}
 
 @app.route('/')
 @app.route('/cover')
 def cover():
-    if session.get('is_logged_in'):
-        return redirect(url_for('pp_page'))
+    if session.get('is_logged_in'): return redirect(url_for('pp_page'))
     return render_template('cover.html')
-
 @app.route('/login')
-@app.route('/login.html')
 def login_page():
-    if session.get('is_logged_in'):
-        if not session.get('has_seen_welcome'): return redirect(url_for('welcome_page'))
-        else: return redirect(url_for('pp_page'))
+    if session.get('is_logged_in'): return redirect(url_for('pp_page'))
     return render_template('login.html')
-
-@app.route('/welcome')
-@app.route('/welcome.html')
-def welcome_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    if session.get('has_seen_welcome'): return redirect(url_for('pp_page'))
-    session['has_seen_welcome'] = True
-    return render_template('welcome.html', username=session.get('username','User'))
-
-@app.route('/patient')
 @app.route('/pp')
-@app.route('/pp.html')
 def pp_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     return render_template('pp.html', symptoms=all_symptoms, username=session.get('username','User'))
-
 @app.route('/resultp')
-@app.route('/resultp.html')
 def result_page():
     r=session.get('last_result',{})
     if not r: return redirect(url_for('pp_page'))
     return render_template('resultp.html', result=r)
-
-@app.route('/thankyou')
-@app.route('/thankyou.html')
-def thankyou_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    r=session.get('last_result',{})
-    return render_template('thankyou.html', result=r, username=session.get('username','User'))
-
 @app.route('/debug/session')
-def debug_session():
-    return jsonify(dict(session))
-
+def debug_session(): return jsonify(dict(session))
 @app.route('/logout')
-def logout(): 
-    conn = get_db_connection()
-    if conn and session.get('user_db_id'):
-        try:
-            cur = conn.cursor()
-            cur.execute("UPDATE users SET logout_time=%s WHERE id=%s", (datetime.now(), session.get('user_db_id')))
-            conn.commit()
-            cur.close()
-        except: pass
-        conn.close()
-    session.clear()
-    return redirect(url_for('cover'))
+def logout(): session.clear(); return redirect(url_for('cover'))
 
 @app.route('/api/send_email_otp', methods=['POST'])
 def api_send_email_otp():
-    data=request.get_json() or {}
-    email=data.get('email','').strip()
-    if '@' not in email: return jsonify({'status':'error','message':'Invalid email'}),400
-    otp=str(random.randint(100000,999999))
-    otp_store[email]={'otp':otp,'time':datetime.now()}
-    temp_users[email]={'username':data.get('username','User')}
-    ok=send_email_otp(email, otp)
-    if ok: return jsonify({'status':'sent'})
-    else: return jsonify({'status':'sent','demo_otp':otp})
-
-@app.route('/api/send_phone_otp', methods=['POST'])
-def api_send_phone_otp():
-    data=request.get_json() or {}
-    phone=data.get('phone','').strip()
-    if len(phone)<10: return jsonify({'status':'error','message':'Invalid phone'}),400
-    otp=str(random.randint(100000,999999))
-    otp_store[phone]={'otp':otp,'time':datetime.now()}
-    temp_users[phone]={'username':data.get('username','User')}
+    data=request.get_json() or {}; email=data.get('email','').strip()
+    otp=str(random.randint(100000,999999)); otp_store[email]={'otp':otp,'time':datetime.now()}
     return jsonify({'status':'sent','demo_otp':otp})
 
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
     data=request.get_json() or {}
-    conn = get_db_connection()
-    cur = None
-    if conn:
-        try:
-            cur = conn.cursor()
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    username VARCHAR(255),
-                    email VARCHAR(255),
-                    phone VARCHAR(20),
-                    login_time DATETIME,
-                    logout_time DATETIME
-                )
-            """)
-            cur.execute("""
-                CREATE TABLE IF NOT EXISTS predictions (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT,
-                    username VARCHAR(255),
-                    patient_name VARCHAR(255),
-                    age VARCHAR(20),
-                    gender VARCHAR(20),
-                    symptoms_input TEXT,
-                    symptoms_cleaned TEXT,
-                    disease VARCHAR(255),
-                    confidence FLOAT,
-                    doctor VARCHAR(255),
-                    created_at DATETIME
-                )
-            """)
-            conn.commit()
-        except Exception as e:
-            print(f"Table create fail: {e}")
-
-    if data.get('type')=='email':
-        email=data.get('email','').strip(); otp=str(data.get('otp','')).strip()
-        stored=otp_store.get(email)
-        if (stored and stored['otp']==otp and datetime.now()-stored['time']<timedelta(minutes=10)) or otp=="123456":
-            session['is_logged_in']=True
-            session.permanent = True
-            session['user_id']=random.randint(1000,9999)
-            session['username']=data.get('username','User')
-            session['has_seen_welcome']=False
-            session['login_time']=datetime.now().isoformat()
-            if conn and cur:
-                try:
-                    cur.execute("INSERT INTO users (username, email, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), email, datetime.now()))
-                    conn.commit()
-                    session['user_db_id'] = cur.lastrowid
-                    print(f"Saved user {email} id {session['user_db_id']}")
-                except Exception as e:
-                    print(f"DB Save fail {e}")
-                finally:
-                    cur.close(); conn.close()
-            otp_store.pop(email,None)
-            return jsonify({'status':'success'})
-        if conn and cur: 
-            cur.close(); conn.close()
-        return jsonify({'status':'error','message':'Invalid OTP'}),400
-
-    elif data.get('type')=='phone':
-        phone=data.get('phone','').strip(); otp=str(data.get('otp','')).strip()
-        if len(otp)==6 and otp.isdigit():
-            session['is_logged_in']=True
-            session.permanent = True
-            session['user_id']=random.randint(1000,9999)
-            session['username']=data.get('username','User')
-            session['has_seen_welcome']=False
-            session['login_time']=datetime.now().isoformat()
-            if conn and cur:
-                try:
-                    cur.execute("INSERT INTO users (username, phone, login_time) VALUES (%s, %s, %s)", (data.get('username','User'), phone, datetime.now()))
-                    conn.commit()
-                    session['user_db_id'] = cur.lastrowid
-                except Exception as e:
-                    print(f"DB Save fail {e}")
-                finally:
-                    cur.close(); conn.close()
-            return jsonify({'status':'success'})
-        if conn and cur: cur.close(); conn.close()
-        return jsonify({'status':'error'}),400
-    
-    if conn and cur: cur.close(); conn.close()
-    return jsonify({'status':'error'}),400
+    session.permanent = True
+    session['is_logged_in']=True
+    session['username']=data.get('username','User')
+    session['has_seen_welcome']=False
+    session.modified = True
+    return jsonify({'status':'success'})
 
 @app.route('/predict', methods=['POST'])
 def predict_route():
-    raw = request.form.get('symptoms') or request.form.get('symptoms_text') or ""
-    if not raw.strip():
-        return redirect(url_for('pp_page'))
-    
+    raw = request.form.get('symptoms') or ""
+    if not raw.strip(): return redirect(url_for('pp_page'))
     cleaned = parse_symptoms(str(raw), all_symptoms)
     scores = []
     for dname, info in diseases_data.items():
         if not isinstance(info, dict): continue
-        sym_raw = info.get('Symptoms') or info.get('symptoms') or ""
-        full_text = str(sym_raw).lower()
-        km = 0
-        for c in cleaned:
-            if c.lower() in full_text:
-                km += 1
-            else:
-                words = c.lower().split()
-                if len(words) > 1 and all(w in full_text for w in words if len(w) > 2):
-                    km += 0.8
-        if km > 0:
-            scores.append((dname, km, info))
-    
+        full_text = str(info.get('Symptoms') or "").lower()
+        km = sum(1 for c in cleaned if c.lower() in full_text)
+        if km > 0: scores.append((dname, km, info))
     scores.sort(key=lambda x: x[1], reverse=True)
     if scores:
-        dname = scores[0][0]
-        dinfo = scores[0][2]
-        matched_count = scores[0][1]
-        total_input = len(cleaned) if cleaned else 1
-        conf = (matched_count / total_input) * 85 + 10
-        conf = min(96, max(55, conf))
+        dname, matched_count, dinfo = scores[0][0], scores[0][1], scores[0][2]
+        conf = min(96, max(55, (matched_count / len(cleaned) * 85 + 10) if cleaned else 40))
     else:
-        dname = "No Exact Match - General Checkup"
-        dinfo = {"Description": "Symptoms not strongly matched.", "Diet": "Balanced diet", "Exercise": "30 min walk", "Precautions": "Consult doctor", "Lab_Tests": ["CBC"], "Specialist": "General Physician"}
-        conf = 40
-
+        dname="General Checkup"; dinfo={"Description":"Consult doctor","Diet":"Balanced","Exercise":"Walk","Precautions":"Doctor","Lab_Tests":["CBC"],"Specialist":"General"}; conf=40
     lab = dinfo.get('Lab_Tests') or ["CBC"]
     if isinstance(lab, str): lab = [s.strip() for s in re.split(r',|;', lab) if s.strip()]
-
-    result = {
-        'disease': dname,
-        'confidence': round(float(conf), 2),
-        'description': dinfo.get('Description', ''),
-        'diet': dinfo.get('Diet', 'Balanced diet'),
-        'exercise': dinfo.get('Exercise', 'Light walk'),
-        'precaution': dinfo.get('Precautions', 'Consult doctor'),
-        'lab_tests': lab,
-        'doctor': dinfo.get('Specialist', 'General Physician'),
-        'symptoms': ", ".join(cleaned),
-        'original_input': raw,
-        'patient_name': request.form.get('patient_name') or session.get('username', 'Patient'),
-        'age': request.form.get('age') or "N/A",
-        'gender': request.form.get('gender') or "N/A",
-        'duration': request.form.get('duration') or "N/A",
-        'date': datetime.now().strftime("%d-%m-%Y %H:%M"),
-        'is_emergency': False
-    }
-
+    result = {'disease': dname,'confidence': round(float(conf), 2),'description': dinfo.get('Description',''),'diet': dinfo.get('Diet',''),'exercise': dinfo.get('Exercise',''),'precaution': dinfo.get('Precautions',''),'lab_tests': lab,'doctor': dinfo.get('Specialist','General'),'symptoms': ", ".join(cleaned),'original_input': raw,'patient_name': request.form.get('patient_name') or session.get('username','Patient'),'age': request.form.get('age') or "N/A",'gender': request.form.get('gender') or "N/A",'date': datetime.now().strftime("%d-%m-%Y %H:%M")}
+    
     conn2 = get_db_connection()
     if conn2:
         try:
             cur2 = conn2.cursor()
             cur2.execute("""
                 INSERT INTO predictions (user_id, username, patient_name, age, gender, symptoms_input, symptoms_cleaned, disease, confidence, doctor, created_at)
-                VALUES (%s,%s,%s,%s,%s,%s,%s)
-            """, (session.get('user_db_id'), session.get('username'), result['patient_name'], result['age'], result['gender'], raw, result['symptoms'], dname, float(conf), result['doctor'], datetime.now()))
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (session.get('user_db_id', 1), session.get('username','User'), result['patient_name'], result['age'], result['gender'], raw, result['symptoms'], dname, float(conf), result['doctor'], datetime.now()))
             conn2.commit()
             cur2.close()
-        except Exception as e:
-            print(f"Pred save fail {e}")
+        except Exception as e: print(f"Pred save fail {e}")
         conn2.close()
 
     session['last_result'] = result
     return redirect(url_for('result_page'))
-
-@app.route('/api/download_pdf')
-def download_pdf():
-    from fpdf import FPDF
-    r=session.get('last_result',{})
-    if not r: return redirect(url_for('pp_page'))
-    pdf=FPDF(); pdf.add_page(); pdf.set_font("Arial","B",16)
-    pdf.cell(0,12,f"Predict AI - {r.get('disease')}",ln=True,align='C')
-    pdf.set_font("Arial","",10)
-    for k in ['patient_name','age','gender','symptoms','description','diet','exercise','precaution','doctor']:
-        v=str(r.get(k,''))
-        if v: pdf.multi_cell(0,7,f"{k.upper()}: {v[:1500]}")
-    out=pdf.output(); 
-    if isinstance(out,str): out=out.encode('latin-1')
-    buf=io.BytesIO(out); buf.seek(0)
-    return send_file(buf,as_attachment=True,download_name="Report.pdf",mimetype='application/pdf')
 
 if __name__=='__main__':
     app.run(host='0.0.0.0',port=5000,debug=True)
