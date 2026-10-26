@@ -137,18 +137,68 @@ try:
 except Exception as e: print(f"Load error {e}")
 
 otp_store = {}
+# ---- PAGES ---- FINAL FIXED ROUTES AS PER YOUR FLOW
 
-# ---- PAGES ---- FIXED ROUTES
 @app.route('/')
-def home(): return redirect(url_for('cover_page'))
+def home(): 
+    return redirect(url_for('cover_page'))
+
 @app.route('/cover')
-def cover_page(): return render_template('cover.html')
+def cover_page(): 
+    return render_template('cover.html')
+
 @app.route('/login')
-def login_page(): return render_template('login.html')
+def login_page():
+    # Login hua hai toh login page kabhi mat dikhao, direct pp pe bhejo
+    if session.get('is_logged_in'):
+        return redirect(url_for('pp_page'))
+    return render_template('login.html')
+
 @app.route('/welcome')
-def welcome_page(): return render_template('welcome.html')
+def welcome_page():
+    # Login nahi hai toh login pe bhejo
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    # Agar welcome ek baar dikh chuka hai toh direct pp
+    if session.get('welcome_shown'):
+        return redirect(url_for('pp_page'))
+    return render_template('welcome.html')
+
 @app.route('/pp')
-def pp_page(): return render_template('pp.html', symptoms=all_symptoms)
+def pp_page():
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    # Welcome abhi tak nahi dikha toh pehle welcome dikhao
+    if not session.get('welcome_shown'):
+        return redirect(url_for('welcome_page'))
+    return render_template('pp.html', symptoms=all_symptoms)
+
+@app.route('/resultp')
+def result_page(): 
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    r = session.get('last_result')
+    if not r: 
+        return redirect(url_for('pp_page'))
+    return render_template('resultp.html', result=r)
+
+@app.route('/thankyou')
+def thankyou_page(): 
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    return render_template('thankyou.html')
+
+@app.route('/logout')
+def logout(): 
+    session.clear()
+    return redirect(url_for('cover_page'))
+
+# Mark welcome as shown - isko welcome page se call karna hai
+@app.route('/mark_welcome_done')
+def mark_welcome_done():
+    session['welcome_shown'] = True
+    session.modified = True
+    return redirect(url_for('pp_page'))
 
 # FIX FOR 404 - YE 2 NAYE ROUTE ADD KIYE
 @app.route('/patient')
