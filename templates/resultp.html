@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Predict AI - Result</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#6366f1">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+body{margin:0;background:#0a1220;display:flex;justify-content:center;padding:20px;font-family:'Poppins',sans-serif;box-sizing:border-box}
+.main-card{width:100%;max-width:780px;background:linear-gradient(180deg,#1e2a44,#111b2f);border:1px solid #2a3650;border-radius:18px;padding:22px;position:relative;min-height:700px;overflow:hidden;box-sizing:border-box}
+.setting-panel{position:absolute;top:65px;right:22px;width:250px;background:#1f2d4a;border:1px solid #3a4a6a;border-radius:12px;padding:8px;display:none;z-index:100}
+.setting-panel.active{display:block}
+.set-item{padding:11px 12px;border-radius:8px;color:#c2d1e8;font-size:11px;cursor:pointer;display:flex;gap:10px}
+.set-item:hover{background:#2a344d;color:#fff}
+.page{display:none;position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(180deg,#1e2a44,#111b2f);border-radius:18px;padding:22px;box-sizing:border-box;z-index:50;overflow-y:auto}
+.page.active{display:block}
+.page-head{display:flex;align-items:center;gap:12px;margin-bottom:20px;border-bottom:1px solid #2a3650;padding-bottom:15px}
+.back{width:32px;height:32px;background:#2a344d;border:1px solid #3a4a6a;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff}
+.policy-box{background:#2a344d;border:1px solid #3a4a6a;border-radius:10px;padding:15px;margin:12px 0}
+.policy-box h4{margin:0 0 8px 0;color:#5cb3ff;font-size:13px}.policy-box p{margin:0;font-size:11.5px;color:#c2d1e8;line-height:1.7}
+.hist-item{background:#2a344d;border:1px solid #3a4a6a;border-radius:8px;padding:10px;margin:8px 0;display:flex;justify-content:space-between;align-items:center}
+.patient-bar{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:14px 18px;display:grid;grid-template-columns:1.2fr 0.8fr 1fr 1fr 1.2fr;gap:10px;margin-bottom:14px}
+.pred-box{background:linear-gradient(180deg,#2a3a5a,#1f2d4a);border:1px solid #3a5a8a;border-radius:12px;padding:18px;text-align:center;margin-bottom:14px}
+.btn2{background:#2f7bff;border:none;color:#fff;padding:10px 20px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer}
+.three-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px}
+.small-card{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:16px;text-align:center;min-height:120px}
+.horiz-box{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.sym-tag{background:#1f2d4a;border:1px solid #3a4a6a;color:#e6eefc;padding:5px 11px;border-radius:20px;font-size:10px;margin:3px;display:inline-block}
+.lab-tag{padding:6px 12px;border-radius:20px;font-size:10px;background:#1f2d4a;color:#7bc8ff;border:1px solid #3a4a6a;margin:3px;display:inline-block}
+.hosp-item{display:flex;justify-content:space-between;align-items:center;background:#1f2d4a;padding:10px 12px;border-radius:8px;margin:6px 0;font-size:11px}
+/* Logout Modal */
+#logoutModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:999;align-items:center;justify-content:center}
+#logoutModal.active{display:flex}
+.modal-box{background:#1e2a44;border:1px solid #3a4a6a;border-radius:16px;padding:22px;width:85%;max-width:320px;text-align:center}
+@media (max-width: 640px){
+  body{padding:8px}
+  .main-card{padding:14px;border-radius:14px;min-height:auto}
+  .patient-bar{grid-template-columns:1fr 1fr;gap:8px;padding:12px}
+  .three-grid{grid-template-columns:1fr;gap:10px}
+}
+</style>
+</head>
+<body>
+<div class="main-card" id="captureArea">
+<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:22px">
+<div style="display:flex;align-items:center;gap:9px">
+<div style="width:28px;height:28px;background:linear-gradient(135deg,#3a7bff,#5aa0ff);border-radius:7px;display:flex;align-items:center;justify-content:center;">⬡</div>
+<div><div style="color:#6aa8ff;font-weight:800;font-size:19px;line-height:1">Predict AI</div><div style="color:#6b7fa3;font-size:7.5px;letter-spacing:1.2px;font-weight:600;margin-top:2px">SMART DISEASE SYSTEM</div></div>
+</div>
+<div style="cursor:pointer" onclick="toggleSet()"><div style="width:34px;height:34px;background:#2a344d;border:1px solid #3a4a6a;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">⚙️</div></div>
+<div class="setting-panel" id="setPanel">
+<div class="set-item" onclick="saveAsPdf()">📥 Save as PDF</div>
+<div class="set-item" onclick="openPage('historyPage')">📄 My Reports History</div>
+<div class="set-item" onclick="openPage('privacyPage')">🔒 Privacy Policy</div>
+<div class="set-item" onclick="openPage('helpPage')">❓ Help & Support</div>
+<div class="set-item" onclick="openPage('aboutPage')">ℹ️ About Us</div>
+<div style="height:1px;background:#2a3650;margin:5px 0"></div>
+<div class="set-item" style="color:#ff8a8a" onclick="showLogoutModal()">🚪 Logout</div>
+</div>
+</div>
+
+<div id="homeContent">
+<div class="patient-bar">
+<div><div style="font-size:9px;color:#7b8aa5">PATIENT NAME</div><div style="color:#fff;font-size:12px;font-weight:600">{{ result.patient_name }}</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">AGE</div><div style="color:#fff;font-size:12px">{{ result.age }} Y</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">GENDER</div><div style="color:#fff;font-size:12px">{{ result.gender }}</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">DATE</div><div style="color:#fff;font-size:12px">{{ result.date }}</div></div>
+<div><div style="font-size:9px;color:#7b8aa5">DURATION</div><div style="color:#fff;font-size:12px">{{ result.duration }}</div></div>
+</div>
+<div class="pred-box">
+<h2 style="margin:0;color:#5cb3ff;font-size:22px">{{ result.disease }} - {{ result.confidence }}%</h2>
+<p style="color:#aabbd5;font-size:11px;margin:6px 0 0 0">Prediction Accuracy: {{ result.confidence }}% | Symptoms Analyzed: {{ result.symptoms }}</p>
+<p style="color:#ff8a8a;font-size:10px;margin-top:6px">⚠️ Consult your doctor before taking any action</p>
+</div>
+<div class="three-grid">
+<div class="small-card"><div style="font-size:26px">🍎</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Diet Plan</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.diet }}</div></div>
+<div class="small-card"><div style="font-size:26px">🏃</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Exercise</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.exercise }}</div></div>
+<div class="small-card"><div style="font-size:26px">🛡️</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Precaution</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.precaution }}</div></div>
+</div>
+<div class="horiz-box"><div style="display:flex;justify-content:space-between;margin-bottom:6px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">⚠️ Emergency Alert</h4></div>
+{% if result.is_emergency %}
+<p style="margin:0;font-size:11px;color:#ff4b4b;font-weight:700;line-height:1.4">🚨 EMERGENCY DETECTED: Your symptoms are critical. Please consult a {{ result.doctor }} as soon as possible.</p>
+{% else %}
+<p style="margin:0;font-size:11px;color:#c2d1e8;line-height:1.4">✅ No Emergency Detected. But please consult {{ result.doctor }}.</p>
+{% endif %}
+</div>
+<div class="horiz-box"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">📋 Your Symptoms / Disease Description</h4><span style="font-size:8px;background:#1f2d4a;border:1px solid #3a4a6a;color:#7b8aa5;padding:3px 8px;border-radius:20px">AI Analyzed</span></div>
+<div>{% for s in result.symptoms.split(',') if s.strip() %}<span class="sym-tag">{{ s.strip() }}</span>{% endfor %}</div>
+<div style="background:#1f2d4a;border-radius:8px;padding:12px;margin-top:12px;font-size:11px;color:#c2d1e8;line-height:1.6"><b style="color:#7b8aa5;font-size:9px">DISEASE DESCRIPTION</b><br><br>{{ result.description }}</div>
+</div>
+<div class="horiz-box"><h4 style="margin:0 0 10px 0;color:#5cb3ff;font-size:11px">🧪 Suitable Lab Test</h4><div>{% for test in result.lab_tests %}<span class="lab-tag">🧪 {{ test }}</span>{% endfor %}</div></div>
+<div class="horiz-box"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">📍 Nearest Hospital & Suitable Doctor</h4><span style="font-size:8px;background:#1f2d4a;border:1px solid #3a4a6a;color:#7b8aa5;padding:3px 8px;border-radius:20px">{{ result.doctor }}</span></div>
+<div id="hospitalList"><p style="color:#7b8aa5;font-size:10px">Click below button to allow location and find nearby hospitals.</p></div>
+<button class="btn2" id="hospBtn" style="width:100%;margin-top:10px" onclick="findNearby('{{ result.doctor }}')">📍 Check Nearest {{ result.doctor }} By Your Home</button>
+<div id="mapBox" style="display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid #3a4a6a;height:220px;background:#1f2d4a"><iframe id="mapFrame" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen></iframe></div>
+</div>
+<div style="display:flex;justify-content:center;gap:12px;margin-top:18px">
+<button style="padding:11px 22px;border-radius:20px;background:#2a344d;border:1px solid #3a4a6a;color:#c2d1e8;font-size:11px;cursor:pointer;font-weight:600" onclick="window.location.href='/pp'">← Predict Again</button>
+<button class="btn2" style="padding:11px 30px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#3a7bff,#5aa0ff)" onclick="window.location.href='/thankyou'">Next →</button>
+</div>
+</div>
+
+<div class="page" id="historyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">My Reports History</h2></div><div id="historyList">Loading...</div></div>
+<div class="page" id="privacyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Privacy Policy</h2></div><div class="policy-box"><h4>Data Security</h4><p>All data encrypted AES-256 and SSL.</p></div></div>
+<div class="page" id="helpPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Help & Support</h2></div><div class="policy-box"><p>Email: support@predictai.com</p></div></div>
+<div class="page" id="aboutPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">About</h2></div><div class="policy-box"><p>Predict AI v2.0 - 100+ Diseases</p></div></div>
+</div>
+
+<div id="logoutModal">
+  <div class="modal-box">
+    <div style="font-size:40px">🚪</div>
+    <h3 style="color:#fff;margin:10px 0">Logout from Predict AI?</h3>
+    <p style="color:#7b8aa5;font-size:11px">Do you want to logout from this app "Predict AI" ?</p>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button onclick="hideLogoutModal()" style="flex:1;padding:10px;border-radius:20px;background:#2a344d;border:1px solid #3a4a6a;color:#fff;cursor:pointer">No</button>
+      <button onclick="confirmLogout()" style="flex:1;padding:10px;border-radius:20px;background:#ff4b4b;border:none;color:#fff;cursor:pointer;font-weight:700">Yes, Logout</button>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleSet(){document.getElementById('setPanel').classList.toggle('active')}
+function openPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById(id).classList.add('active');document.getElementById('setPanel').classList.remove('active');}
+function closePage(){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'))}
+
+function showLogoutModal(){document.getElementById('setPanel').classList.remove('active');document.getElementById('logoutModal').classList.add('active')}
+function hideLogoutModal(){document.getElementById('logoutModal').classList.remove('active')}
+function confirmLogout(){window.location.href='/';}
+
+async function saveAsPdf(){
+  document.getElementById('setPanel').classList.remove('active');
+  const area = document.getElementById('captureArea');
+  const btn = document.createElement('div');
+  btn.innerText = 'Generating PDF...';
+  btn.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1e2a44;color:#5cb3ff;padding:15px 25px;border-radius:30px;border:1px solid #3a4a6a;z-index:9999;font-size:13px';
+  document.body.appendChild(btn);
+  try{
+    const canvas = await html2canvas(area, {scale:2, useCORS:true, backgroundColor:'#0a1220', scrollY:0, windowHeight: area.scrollHeight});
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p','mm','a4');
+    const pdfWidth = pdf.internal.pageSize.getWidth();
+    const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
+    let heightLeft = pdfHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+    heightLeft -= pdf.internal.pageSize.getHeight();
+    while(heightLeft > 0){
+      position = heightLeft - pdfHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+      heightLeft -= pdf.internal.pageSize.getHeight();
+    }
+    pdf.save('PredictAI-Report-{{ result.patient_name }}.pdf');
+  }catch(e){alert('PDF Error: '+e.message)}
+  document.body.removeChild(btn);
+}
+
+function getDistanceKm(lat1,lon1,lat2,lon2){const R=6371;const dLat=(lat2-lat1)*Math.PI/180;const dLon=(lon2-lon1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;return (R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));}
+function findNearby(spec){let listBox=document.getElementById('hospitalList');let btn=document.getElementById('hospBtn');let mapBox=document.getElementById('mapBox');let mapFrame=document.getElementById('mapFrame');if(!navigator.geolocation){listBox.innerHTML="<p style='color:#ff8a8a'>Geolocation not supported</p>";return;}listBox.innerHTML="<p style='color:#5cb3ff;font-size:10px'>📡 Location permission maang raha hai... Allow karo</p>";btn.innerText="Getting Location...";navigator.geolocation.getCurrentPosition(async (pos)=>{let lat=pos.coords.latitude;let lon=pos.coords.longitude;btn.innerText=`✅ Location Found - Searching ${spec}...`;mapBox.style.display="block";mapFrame.src=`https://www.google.com/maps?q=${lat},${lon}&z=14&output=embed`;try{const q=`[out:json][timeout:25];(node["amenity"="hospital"](around:5000,${lat},${lon});way["amenity"="hospital"](around:5000,${lat},${lon}););out center 12;`;const url=`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`;let res=await fetch(url);let data=await res.json();let hospitals=data.elements.map(el=>{let hLat=el.lat||el.center?.lat;let hLon=el.lon||el.center?.lon;if(!hLat)return null;return{name:el.tags?.name||`${spec} Care Center`,lat:hLat,lon:hLon,addr:el.tags?.["addr:city"]||"Near you",dist:getDistanceKm(lat,lon,hLat,hLon)}}).filter(Boolean).sort((a,b)=>a.dist-b.dist).slice(0,6);listBox.innerHTML=hospitals.map(h=>`<div class="hosp-item"><div><b style="color:#fff">${h.name}</b><br><span style="font-size:9px;color:#7b8aa5">${h.addr} • ${h.dist.toFixed(1)} KM away</span></div><div><a href="https://www.google.com/maps/dir/?api=1&origin=${lat},${lon}&destination=${h.lat},${h.lon}" target="_blank" style="color:#fff;background:#2f7bff;padding:4px 10px;border-radius:12px;font-size:9px;text-decoration:none">Get Direction</a></div></div>`).join('');}catch(e){listBox.innerHTML=`<p style='color:#ff8a8a'>Error: ${e.message}</p>`;} },(err)=>{listBox.innerHTML=`<p style='color:#ff8a8a'>❌ ${err.message}</p>`;btn.innerText="📍 Allow Location & Retry";},{enableHighAccuracy:true,timeout:15000});}
+</script>
+</body>
+</html>
