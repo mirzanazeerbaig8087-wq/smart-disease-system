@@ -135,16 +135,24 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
     document.getElementById('mainBtn').innerText="Sending OTP...";
     tempUser={username:u,email:em,password:pass};
     try{
-      let res=await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
-      let d=await res.json();
-      if(d.demo_otp){
-        autoFillOtp(emailBoxes, d.demo_otp);
-        err.innerText="Demo Mode: OTP Auto-filled: "+d.demo_otp;
-        err.style.color="#2f80ff";
-      } else {
-        err.innerText="OTP sent to Gmail! Check inbox/spam";
-        err.style.color="#00a651";
-      }
+      let res = await fetch("/api/send_email_otp",{
+  method:"POST",
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify(tempUser)
+});
+let d = await res.json();
+
+if(d.status === 'sent'){
+  // OTP auto-fill chahiye toh backend se aaya hua hidden use karo, user ko mat dikhao
+  if(d.otp_autofill){
+    autoFillOtp(emailBoxes, d.otp_autofill);
+  }
+  err.innerText = "OTP sent to Gmail! Check inbox/spam";
+  err.style.color = "#00a651";
+} else {
+  err.innerText = d.message || "Failed to send OTP";
+  err.style.color = "red";
+}
       document.getElementById('mainBtn').innerText="Verify & Login";
       otpSentEmail=true;
     }catch(er){

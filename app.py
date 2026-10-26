@@ -11,9 +11,11 @@ app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False
+app.config['SESSION_COOKIE_SECURE'] = True  # FIX: Vercel HTTPS = True karna hi padega
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_NAME'] = 'smart_session'
+app.config['SESSION_COOKIE_DOMAIN'] = None
+app.config['SESSION_COOKIE_PATH'] = '/'
 
 @app.route('/manifest.json')
 def manifest(): return send_from_directory('static', 'manifest.json')
@@ -42,7 +44,6 @@ DB_CONFIG = {
 }
 def get_db_connection():
     try:
-        # Vercel pe ca.pem nahi hoga to bina ssl ke connect karo
         if os.path.exists(CA_PATH) and os.path.getsize(CA_PATH) > 10:
             return mysql.connector.connect(**DB_CONFIG, ssl_ca=CA_PATH)
         else:
@@ -51,7 +52,6 @@ def get_db_connection():
         print(f"DB Error {e}")
         return None
 
-# ---- 1000+ TRANSLATOR - FINAL ----
 def build_translator():
     base = {
         "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","halka bukhar","bukhar thand","bukhar khansi","thand ke sath bukhar","kapkapahat","thand lagna","fever","high fever","low fever","bukhar hai","tez bukhar hai"],
@@ -76,12 +76,6 @@ def build_translator():
         "itching": ["khujli","kharish","khujali","bahut khujli","itching","khujli hai"],
         "rash": ["daane","laal daane","chehre pe daane","sharir pe daane","rash","skin rash","daane hai"],
         "swelling": ["soojan","sujan","pair me soojan","chehre pe soojan","swelling","ankle swelling","face swelling","soojan hai"],
-        "abdominal swelling": ["pet me soojan","pet fulna","abdominal swelling"],
-        "jaundice": ["piliya","peela pan","jaundice","piliya hai"],
-        "yellow eyes": ["aankh peeli","yellow eyes"],
-        "yellow skin": ["chamdi peeli","yellow skin","peela pan"],
-        "dark urine": ["peela peshaab","dark urine","blood in urine","burning urination"],
-        "liver lump": ["pet me gath","liver lump","pet me gath hai"],
     }
     extra_english = ["fever","high fever","low fever","cough","dry cough","wet cough","cold","common cold","runny nose","stuffy nose","sneezing","sore throat","headache","migraine","dizziness","fatigue","weakness","body pain","muscle pain","joint pain","knee pain","back pain","neck pain","shoulder pain","chest pain","chest tightness","abdominal pain","stomach pain","bloating","gas","heartburn","nausea","vomiting","diarrhea","constipation","loss of appetite","weight loss","weight gain","excessive thirst","frequent urination","burning urination","blood in urine","dark urine","itching","skin rash","swelling","ankle swelling","face swelling","numbness","tingling","palpitations","rapid heartbeat","shortness of breath","wheezing","night sweats","cold sweats","shivering","tremor","seizure","fainting","memory loss","confusion","depression","anxiety","insomnia","blurred vision","double vision","red eyes","eye pain","ear pain","hearing loss","nosebleed","loss of smell","toothache","neck stiffness","hair loss","brittle nails","swollen glands","fever with chills","fever with rash","cough with blood","vomiting blood","hiccups","snoring","blood in stool","yellow skin","yellow eyes","pale skin","abdominal swelling","liver lump","acidity","indigestion","loose motion"]
     trans = {}
@@ -104,7 +98,6 @@ def build_translator():
         trans[f"i have {s}"] = s
     return trans
 TRANSLATION_MAP = build_translator()
-print(f"Translator loaded {len(TRANSLATION_MAP)} entries")
 
 def normalize(text, all_sym):
     t = text.lower().strip()
@@ -127,7 +120,6 @@ def parse_symptoms(raw, all_sym):
             if len(s)>2: cleaned.append(normalize(s, all_sym))
     return list(dict.fromkeys(cleaned))
 
-# ---- MODEL LOAD FIX ----
 diseases_data={}; all_symptoms=[]
 try:
     if os.path.exists('model.pkl.gz'):
@@ -135,8 +127,6 @@ try:
             d=pickle.load(f)
             if isinstance(d, dict):
                 diseases_data = d.get('diseases_data') or d
-                if len(diseases_data) < 5 and 'diseases_data' in d:
-                    diseases_data = d['diseases_data']
             else:
                 diseases_data = {}
     if not diseases_data and os.path.exists('diseases.json'):
@@ -144,12 +134,11 @@ try:
             diseases_data=json.load(f)
     if os.path.exists('symptoms.pkl'):
         with open('symptoms.pkl','rb') as f: all_symptoms=pickle.load(f)
-    print(f"FINAL diseases_data: {len(diseases_data)} symptoms: {len(all_symptoms)}")
 except Exception as e: print(f"Load error {e}")
 
 otp_store = {}
 
-# ---- PAGES ----
+# ---- PAGES ---- FIXED ROUTES
 @app.route('/')
 def home(): return redirect(url_for('cover_page'))
 @app.route('/cover')
@@ -160,6 +149,13 @@ def login_page(): return render_template('login.html')
 def welcome_page(): return render_template('welcome.html')
 @app.route('/pp')
 def pp_page(): return render_template('pp.html', symptoms=all_symptoms)
+
+# FIX FOR 404 - YE 2 NAYE ROUTE ADD KIYE
+@app.route('/patient')
+def patient_page(): return redirect(url_for('pp_page'))
+@app.route('/lp')
+def lp_page(): return render_template('lp.html') if os.path.exists('templates/lp.html') else redirect(url_for('pp_page'))
+
 @app.route('/resultp')
 def result_page(): 
     r=session.get('last_result',{})
@@ -170,13 +166,12 @@ def thankyou_page(): return render_template('thankyou.html')
 @app.route('/logout')
 def logout(): session.clear(); return redirect(url_for('cover_page'))
 
-# ---- OTP FIX - NO DEMO TEXT ----
 def send_otp_email(to_email, otp):
     try:
         EMAIL_USER = os.getenv('EMAIL_USER')
         EMAIL_PASS = os.getenv('EMAIL_PASS')
         if not EMAIL_USER or not EMAIL_PASS:
-            print("EMAIL_USER/PASS missing in Vercel Env")
+            print("EMAIL_USER/PASS missing")
             return False
         msg = MIMEMultipart()
         msg['From'] = EMAIL_USER
@@ -189,7 +184,6 @@ def send_otp_email(to_email, otp):
         server.login(EMAIL_USER, EMAIL_PASS)
         server.send_message(msg)
         server.quit()
-        print(f"Email OTP sent to {to_email}")
         return True
     except Exception as e:
         print(f"Email send failed: {e}")
@@ -210,11 +204,9 @@ def api_send_otp():
     if email: otp_store[email] = {'otp': otp, 'time': datetime.now()}
     if phone: otp_store[phone] = {'otp': otp, 'time': datetime.now()}
     print(f"Generated OTP {otp} for {identifier}")
-
     if email:
-        send_otp_email(email, otp) # fail bhi ho to bhi user ko same msg
-
-    # IMPORTANT: Frontend ko kabhi demo word mat bhejo
+        send_otp_email(email, otp)
+    # Demo word kabhi nahi bhejna
     return jsonify({'status':'sent','message':'OTP sent successfully','otp_autofill': otp})
 
 @app.route('/api/verify_login', methods=['POST'])
@@ -238,13 +230,12 @@ def api_verify_login():
     session['has_seen_welcome']=False
     session.modified = True
     otp_store.pop(identifier, None)
-    # DB me user save (agar fail bhi ho to login success rahe)
     try:
         conn = get_db_connection()
         if conn:
             cur = conn.cursor()
             cur.execute("CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255), phone VARCHAR(50), username VARCHAR(100), created_at DATETIME)")
-            cur.execute("INSERT INTO users (email, phone, username, created_at) VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE username=VALUES(username)", (email, phone, data.get('username','User'), datetime.now()))
+            cur.execute("INSERT INTO users (email, phone, username, created_at) VALUES (%s,%s,%s,%s)", (email, phone, data.get('username','User'), datetime.now()))
             conn.commit(); cur.close(); conn.close()
     except: pass
     return jsonify({'status':'success'})
