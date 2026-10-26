@@ -165,14 +165,16 @@ def result_page():
 def thankyou_page(): return render_template('thankyou.html')
 @app.route('/logout')
 def logout(): session.clear(); return redirect(url_for('cover_page'))
-
 def send_otp_email(to_email, otp):
     try:
-        EMAIL_USER = os.getenv('EMAIL_USER')
-        EMAIL_PASS = os.getenv('EMAIL_PASS')
+        # Dono naam support karega - MAIL_ ya EMAIL_ jo bhi Vercel pe ho
+        EMAIL_USER = os.getenv('EMAIL_USER') or os.getenv('MAIL_USER')
+        EMAIL_PASS = os.getenv('EMAIL_PASS') or os.getenv('MAIL_PASS')
+        
         if not EMAIL_USER or not EMAIL_PASS:
-            print("EMAIL_USER/PASS missing")
+            print("MAIL_USER/MAIL_PASS missing in Vercel Env")
             return False
+            
         msg = MIMEMultipart()
         msg['From'] = EMAIL_USER
         msg['To'] = to_email
@@ -184,6 +186,7 @@ def send_otp_email(to_email, otp):
         server.login(EMAIL_USER, EMAIL_PASS)
         server.send_message(msg)
         server.quit()
+        print(f"Email sent to {to_email}")
         return True
     except Exception as e:
         print(f"Email send failed: {e}")
@@ -260,7 +263,10 @@ def predict_route():
     lab = dinfo.get('Lab_Tests') or ["CBC"]
     if isinstance(lab, str): lab = [s.strip() for s in re.split(r',|;', lab) if s.strip()]
     result = {'disease': dname,'confidence': round(float(conf), 2),'description': dinfo.get('Description',''),'diet': dinfo.get('Diet',''),'exercise': dinfo.get('Exercise',''),'precaution': dinfo.get('Precautions',''),'lab_tests': lab,'doctor': dinfo.get('Specialist','General'),'symptoms': ", ".join(cleaned),'original_input': raw,'patient_name': request.form.get('patient_name') or session.get('username','Patient'),'age': request.form.get('age') or "N/A",'gender': request.form.get('gender') or "N/A",'date': datetime.now().strftime("%d-%m-%Y %H:%M")}
+    
     session['last_result'] = result
+    session.modified = True   # <-- YE LINE SABSE ZARURI HAI, isi se fix hoga
+    session.permanent = True
     return redirect(url_for('result_page'))
 
 if __name__=='__main__': app.run(host='0.0.0.0',port=5000,debug=True)

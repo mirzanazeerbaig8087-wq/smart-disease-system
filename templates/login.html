@@ -181,7 +181,10 @@ document.getElementById('phoneForm').addEventListener('submit', async function(e
     currentPhoneOtp = generateRandomPhoneOtp();
     tempUser={username:u,phone:ph};
     document.getElementById("demoNote").style.display="block";
-    document.getElementById("demoNote").innerText="TESTING MODE: OTP is "+currentPhoneOtp+" - Auto-filled";
+    // document.getElementById("demoNote").innerText=""; // Removed Demo Note
+err.innerText="OTP sent successfully! Check your phone.";
+err.style.color="#00a651";
+
     document.getElementById("otpArea2").style.display="flex";
     autoFillOtp(phoneBoxes, currentPhoneOtp);
     document.getElementById("phoneBtn").innerText="Verify & Login";
