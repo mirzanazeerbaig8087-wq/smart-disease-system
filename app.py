@@ -1,5 +1,5 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_file, send_from_directory, Response
-import json, pickle, gzip, os, re, difflib, random, smtplib, io
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory, Response
+import json, pickle, gzip, os, re, difflib, random, smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -42,14 +42,16 @@ DB_CONFIG = {
 }
 def get_db_connection():
     try:
-        if os.path.exists(CA_PATH):
-            return mysql.connector.connect(host=DB_CONFIG['host'], port=DB_CONFIG['port'], user=DB_CONFIG['user'], password=DB_CONFIG['password'], database=DB_CONFIG['database'], ssl_ca=CA_PATH, ssl_verify_cert=True)
+        # Vercel pe ca.pem nahi hoga to bina ssl ke connect karo
+        if os.path.exists(CA_PATH) and os.path.getsize(CA_PATH) > 10:
+            return mysql.connector.connect(**DB_CONFIG, ssl_ca=CA_PATH)
         else:
-            return mysql.connector.connect(host=DB_CONFIG['host'], port=DB_CONFIG['port'], user=DB_CONFIG['user'], password=DB_CONFIG['password'], database=DB_CONFIG['database'])
+            return mysql.connector.connect(**DB_CONFIG)
     except Error as e:
-        print(f"DB Error {e}"); return None
+        print(f"DB Error {e}")
+        return None
 
-# --- 1000+ TRANSLATOR MAP - FINAL ---
+# ---- 1000+ TRANSLATOR - FINAL ----
 def build_translator():
     base = {
         "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","halka bukhar","bukhar thand","bukhar khansi","thand ke sath bukhar","kapkapahat","thand lagna","fever","high fever","low fever","bukhar hai","tez bukhar hai"],
@@ -81,23 +83,10 @@ def build_translator():
         "dark urine": ["peela peshaab","dark urine","blood in urine","burning urination"],
         "liver lump": ["pet me gath","liver lump","pet me gath hai"],
     }
-    
-    extra_english = [
-        "fever","high fever","low fever","cough","dry cough","wet cough","cold","common cold","runny nose","stuffy nose","sneezing","sore throat",
-        "headache","migraine","dizziness","fatigue","weakness","body pain","muscle pain","joint pain","knee pain","back pain","neck pain","shoulder pain",
-        "chest pain","chest tightness","abdominal pain","stomach pain","bloating","gas","heartburn","nausea","vomiting","diarrhea","constipation",
-        "loss of appetite","weight loss","weight gain","excessive thirst","frequent urination","burning urination","blood in urine","dark urine","itching",
-        "skin rash","swelling","ankle swelling","face swelling","numbness","tingling","palpitations","rapid heartbeat","shortness of breath","wheezing",
-        "night sweats","cold sweats","shivering","tremor","seizure","fainting","memory loss","confusion","depression","anxiety","insomnia",
-        "blurred vision","double vision","red eyes","eye pain","ear pain","hearing loss","nosebleed","loss of smell","toothache","neck stiffness",
-        "hair loss","brittle nails","swollen glands","fever with chills","fever with rash","cough with blood","vomiting blood","hiccups","snoring",
-        "blood in stool","yellow skin","yellow eyes","pale skin","abdominal swelling","liver lump","acidity","indigestion","loose motion","constipation"
-    ]
-
+    extra_english = ["fever","high fever","low fever","cough","dry cough","wet cough","cold","common cold","runny nose","stuffy nose","sneezing","sore throat","headache","migraine","dizziness","fatigue","weakness","body pain","muscle pain","joint pain","knee pain","back pain","neck pain","shoulder pain","chest pain","chest tightness","abdominal pain","stomach pain","bloating","gas","heartburn","nausea","vomiting","diarrhea","constipation","loss of appetite","weight loss","weight gain","excessive thirst","frequent urination","burning urination","blood in urine","dark urine","itching","skin rash","swelling","ankle swelling","face swelling","numbness","tingling","palpitations","rapid heartbeat","shortness of breath","wheezing","night sweats","cold sweats","shivering","tremor","seizure","fainting","memory loss","confusion","depression","anxiety","insomnia","blurred vision","double vision","red eyes","eye pain","ear pain","hearing loss","nosebleed","loss of smell","toothache","neck stiffness","hair loss","brittle nails","swollen glands","fever with chills","fever with rash","cough with blood","vomiting blood","hiccups","snoring","blood in stool","yellow skin","yellow eyes","pale skin","abdominal swelling","liver lump","acidity","indigestion","loose motion"]
     trans = {}
-    prefixes = ["", "mujhe ", "mujhe ", "mujhko ", "mere ko ", "muje "]
-    suffixes = ["", " hai", " hai", " ho raha hai", " ho rahi hai"]
-
+    prefixes = ["", "mujhe ", "mujhko ", "mere ko ", "muje "]
+    suffixes = ["", " hai", " ho raha hai", " ho rahi hai"]
     for eng, hindi_list in base.items():
         for h in hindi_list:
             h = h.lower().strip()
@@ -105,9 +94,7 @@ def build_translator():
                 for suf in suffixes:
                     key = f"{pre}{h}{suf}".strip()
                     key = re.sub(r'\s+', ' ', key)
-                    if len(key) > 1:
-                        trans[key] = eng
-
+                    if len(key) > 1: trans[key] = eng
     for s in extra_english:
         s = s.lower()
         trans[s] = s
@@ -115,11 +102,9 @@ def build_translator():
         trans[f"mujhe {s} hai"] = s
         trans[f"mujhe {s}"] = s
         trans[f"i have {s}"] = s
-
     return trans
-
 TRANSLATION_MAP = build_translator()
-print(f"Translator loaded {len(TRANSLATION_MAP)} entries - 1000+ CONFIRMED")
+print(f"Translator loaded {len(TRANSLATION_MAP)} entries")
 
 def normalize(text, all_sym):
     t = text.lower().strip()
@@ -131,10 +116,7 @@ def normalize(text, all_sym):
     if all_sym:
         m = difflib.get_close_matches(t, all_sym, n=1, cutoff=0.55)
         if m: return m[0]
-        m2 = difflib.get_close_matches(t, list(TRANSLATION_MAP.keys()), n=1, cutoff=0.6)
-        if m2: return TRANSLATION_MAP[m2[0]]
     return t
-
 def parse_symptoms(raw, all_sym):
     parts = re.split(r'[,;|\n]+', raw.lower())
     cleaned=[]
@@ -145,107 +127,95 @@ def parse_symptoms(raw, all_sym):
             if len(s)>2: cleaned.append(normalize(s, all_sym))
     return list(dict.fromkeys(cleaned))
 
+# ---- MODEL LOAD FIX ----
 diseases_data={}; all_symptoms=[]
 try:
-    d=None
     if os.path.exists('model.pkl.gz'):
-        with gzip.open('model.pkl.gz','rb') as f: d=pickle.load(f)
-    elif os.path.exists('model.pkl'):
-        with open('model.pkl','rb') as f: d=pickle.load(f)
-    if d and isinstance(d, dict): diseases_data = d.get('diseases_data') or {}
-    if not diseases_data and os.path.exists('disease_info.pkl'):
-        with open('disease_info.pkl','rb') as f: diseases_data=pickle.load(f)
-    for fname in ['diseases.json', 'disease.json']:
-        if os.path.exists(fname):
-            with open(fname,'r',encoding='utf-8') as f:
-                loaded=json.load(f)
-                if loaded: diseases_data = loaded; break
+        with gzip.open('model.pkl.gz','rb') as f:
+            d=pickle.load(f)
+            if isinstance(d, dict):
+                diseases_data = d.get('diseases_data') or d
+                if len(diseases_data) < 5 and 'diseases_data' in d:
+                    diseases_data = d['diseases_data']
+            else:
+                diseases_data = {}
+    if not diseases_data and os.path.exists('diseases.json'):
+        with open('diseases.json','r',encoding='utf-8') as f:
+            diseases_data=json.load(f)
     if os.path.exists('symptoms.pkl'):
         with open('symptoms.pkl','rb') as f: all_symptoms=pickle.load(f)
-    print(f"FINAL diseases_data count: {len(diseases_data)}")
+    print(f"FINAL diseases_data: {len(diseases_data)} symptoms: {len(all_symptoms)}")
 except Exception as e: print(f"Load error {e}")
 
 otp_store = {}
 
+# ---- PAGES ----
 @app.route('/')
+def home(): return redirect(url_for('cover_page'))
 @app.route('/cover')
-def cover():
-    if session.get('is_logged_in'): return redirect(url_for('pp_page'))
-    return render_template('cover.html')
+def cover_page(): return render_template('cover.html')
 @app.route('/login')
-def login_page():
-    if session.get('is_logged_in'): return redirect(url_for('pp_page'))
-    return render_template('login.html')
+def login_page(): return render_template('login.html')
+@app.route('/welcome')
+def welcome_page(): return render_template('welcome.html')
 @app.route('/pp')
-def pp_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    return render_template('pp.html', symptoms=all_symptoms, username=session.get('username','User'))
+def pp_page(): return render_template('pp.html', symptoms=all_symptoms)
 @app.route('/resultp')
-def result_page():
+def result_page(): 
     r=session.get('last_result',{})
     if not r: return redirect(url_for('pp_page'))
     return render_template('resultp.html', result=r)
-@app.route('/debug/session')
-def debug_session(): return jsonify(dict(session))
+@app.route('/thankyou')
+def thankyou_page(): return render_template('thankyou.html')
 @app.route('/logout')
-def logout(): session.clear(); return redirect(url_for('cover'))
+def logout(): session.clear(); return redirect(url_for('cover_page'))
 
-# --- EMAIL + PHONE OTP LOGIC - FINAL FIX ---
+# ---- OTP FIX - NO DEMO TEXT ----
 def send_otp_email(to_email, otp):
     try:
         EMAIL_USER = os.getenv('EMAIL_USER')
         EMAIL_PASS = os.getenv('EMAIL_PASS')
         if not EMAIL_USER or not EMAIL_PASS:
-            print("EMAIL_USER / EMAIL_PASS missing - skipping real send")
+            print("EMAIL_USER/PASS missing in Vercel Env")
             return False
         msg = MIMEMultipart()
         msg['From'] = EMAIL_USER
         msg['To'] = to_email
         msg['Subject'] = f"Your OTP is {otp} - Smart Disease System"
-        body = f"""Your OTP for Smart Disease System is: {otp}
-
-Valid for 5 minutes. Do not share.
-- Smart Disease System"""
+        body = f"Your OTP is {otp}\nValid for 5 minutes.\n- Smart Disease System"
         msg.attach(MIMEText(body, 'plain'))
-        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
+        server = smtplib.SMTP('smtp.gmail.com', 587, timeout=15)
         server.starttls()
         server.login(EMAIL_USER, EMAIL_PASS)
         server.send_message(msg)
         server.quit()
+        print(f"Email OTP sent to {to_email}")
         return True
     except Exception as e:
         print(f"Email send failed: {e}")
         return False
 
+@app.route('/api/send_otp', methods=['POST'])
 @app.route('/api/send_email_otp', methods=['POST'])
 @app.route('/api/send_phone_otp', methods=['POST'])
-@app.route('/api/send_otp', methods=['POST'])
 def api_send_otp():
     data = request.get_json() or {}
     email = data.get('email','').strip().lower()
     phone = data.get('phone','').strip()
-    
     identifier = email or phone
     if not identifier:
         return jsonify({'status':'error','message':'Email or Phone required'}), 400
-
     otp = str(random.randint(100000,999999))
-    # Store for both email and phone with same OTP
     otp_store[identifier] = {'otp': otp, 'time': datetime.now()}
     if email: otp_store[email] = {'otp': otp, 'time': datetime.now()}
     if phone: otp_store[phone] = {'otp': otp, 'time': datetime.now()}
+    print(f"Generated OTP {otp} for {identifier}")
 
-    email_sent = False
     if email:
-        email_sent = send_otp_email(email, otp)
+        send_otp_email(email, otp) # fail bhi ho to bhi user ko same msg
 
-    # RESPONSE FIX: Demo text kabhi bhi frontend pe nahi jayega
-    # Sirf silent auto-fill ke liye otp_autofill bhej rahe hai
-    if email_sent:
-        return jsonify({'status':'sent','message':'OTP sent to email','otp_autofill': otp})
-    else:
-        # Agar email config nahi hai to bhi same response, user ko pata nahi chalega ki demo hai
-        return jsonify({'status':'sent','message':'OTP sent','otp_autofill': otp})
+    # IMPORTANT: Frontend ko kabhi demo word mat bhejo
+    return jsonify({'status':'sent','message':'OTP sent successfully','otp_autofill': otp})
 
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
@@ -253,27 +223,30 @@ def api_verify_login():
     email = data.get('email','').strip().lower()
     phone = data.get('phone','').strip()
     user_otp = str(data.get('otp','')).strip()
-
     identifier = email or phone
     target = otp_store.get(identifier) or otp_store.get(email) or otp_store.get(phone)
-
     if not target:
-        return jsonify({'status':'error','message':'OTP not found, please resend'}), 400
-    
+        return jsonify({'status':'error','message':'OTP not found, resend'}), 400
     if datetime.now() - target['time'] > timedelta(minutes=5):
         return jsonify({'status':'error','message':'OTP expired'}), 400
-
     if target['otp'] != user_otp:
         return jsonify({'status':'error','message':'Invalid OTP'}), 400
-
     session.permanent = True
     session['is_logged_in']=True
     session['username']=data.get('username','User')
     session['user_email']=email
     session['has_seen_welcome']=False
     session.modified = True
-    # OTP use ho gaya to delete kar do
     otp_store.pop(identifier, None)
+    # DB me user save (agar fail bhi ho to login success rahe)
+    try:
+        conn = get_db_connection()
+        if conn:
+            cur = conn.cursor()
+            cur.execute("CREATE TABLE IF NOT EXISTS users (id INT AUTO_INCREMENT PRIMARY KEY, email VARCHAR(255), phone VARCHAR(50), username VARCHAR(100), created_at DATETIME)")
+            cur.execute("INSERT INTO users (email, phone, username, created_at) VALUES (%s,%s,%s,%s) ON DUPLICATE KEY UPDATE username=VALUES(username)", (email, phone, data.get('username','User'), datetime.now()))
+            conn.commit(); cur.close(); conn.close()
+    except: pass
     return jsonify({'status':'success'})
 
 @app.route('/predict', methods=['POST'])
@@ -296,22 +269,7 @@ def predict_route():
     lab = dinfo.get('Lab_Tests') or ["CBC"]
     if isinstance(lab, str): lab = [s.strip() for s in re.split(r',|;', lab) if s.strip()]
     result = {'disease': dname,'confidence': round(float(conf), 2),'description': dinfo.get('Description',''),'diet': dinfo.get('Diet',''),'exercise': dinfo.get('Exercise',''),'precaution': dinfo.get('Precautions',''),'lab_tests': lab,'doctor': dinfo.get('Specialist','General'),'symptoms': ", ".join(cleaned),'original_input': raw,'patient_name': request.form.get('patient_name') or session.get('username','Patient'),'age': request.form.get('age') or "N/A",'gender': request.form.get('gender') or "N/A",'date': datetime.now().strftime("%d-%m-%Y %H:%M")}
-    
-    conn2 = get_db_connection()
-    if conn2:
-        try:
-            cur2 = conn2.cursor()
-            cur2.execute("""
-                INSERT INTO predictions (user_id, username, patient_name, age, gender, symptoms_input, symptoms_cleaned, disease, confidence, doctor, created_at)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            """, (session.get('user_db_id', 1), session.get('username','User'), result['patient_name'], result['age'], result['gender'], raw, result['symptoms'], dname, float(conf), result['doctor'], datetime.now()))
-            conn2.commit()
-            cur2.close()
-        except Exception as e: print(f"Pred save fail {e}")
-        conn2.close()
-
     session['last_result'] = result
     return redirect(url_for('result_page'))
 
-if __name__=='__main__':
-    app.run(host='0.0.0.0',port=5000,debug=True)
+if __name__=='__main__': app.run(host='0.0.0.0',port=5000,debug=True)

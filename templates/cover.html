@@ -3,38 +3,56 @@
 <head>
     <title>Cover - Predict AI</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-    <meta name="theme-color" content="#6366f1">
+    <meta name="theme-color" content="#000000">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" href="/icon-192.png">
     <link rel="apple-touch-icon" href="/icon-192.png">
     <style>
+        *{margin:0;padding:0;box-sizing:border-box}
         body {
             margin: 0;
             padding: 0;
             overflow: hidden;
-            background: black;
-            -webkit-tap-highlight-color: transparent;
-        }
-        a {
-            display: block;
+            background: #000000; /* white chahiye to #ffffff kar de */
+            display: flex;
+            align-items: center;
+            justify-content: center;
             width: 100dvw;
             height: 100dvh;
-            text-decoration: none;
+            -webkit-tap-highlight-color: transparent;
         }
-        img {
+        a.logo-wrap {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            width: 120px;
+            height: 120px;
+        }
+        img.logo {
             width: 100%;
             height: 100%;
-            object-fit: cover;
-            object-position: center;
+            object-fit: contain; /* cover nahi, contain */
             display: block;
+        }
+
+        /* Responsive - sab device pe button size */
+        @media (max-width: 768px){ /* Phone */
+            a.logo-wrap{ width: 90px; height: 90px; }
+        }
+        @media (min-width: 769px) and (max-width: 1200px){ /* Tablet / PC */
+            a.logo-wrap{ width: 120px; height: 120px; }
+        }
+        @media (min-width: 1201px){ /* TV / 4K */
+            a.logo-wrap{ width: 140px; height: 140px; }
         }
     </style>
 </head>
 <body>
-    <a href="/login">
-        <img src="/static/cover-bg.jpg" alt="Cover">
+    <a href="/login" class="logo-wrap">
+        <img src="/static/cover-black-small.jpg" class="logo" alt="Cover">
     </a>
 
 <script>
