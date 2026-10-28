@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>⌬ Predict AI - smart disease system</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{font-family:'Inter', sans-serif; background:#080a0f; color:white;}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-thumb{background:#1f2937; border-radius:10px}
+.dot{animation: blink 1.4s infinite} .dot:nth-child(2){animation-delay:.2s} .dot:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.3} 40%{opacity:1}}
+.chat-bubble{max-width:85%; white-space:pre-wrap; line-height:1.7}
+.user-bubble{background:linear-gradient(135deg,#6366f1,#8b5cf6); border-radius:18px 18px 4px 18px}
+.ai-bubble{background:#11141f; border:1px solid #1e2436; border-radius:18px 18px 18px 4px}
+</style>
+</head>
+<body class="h-screen flex flex-col">
+
+<header class="h-[64px] flex items-center justify-between px-6 border-b border-[#1e2436] bg-[#0b0e18]/80 backdrop-blur sticky top-0 z-20">
+<div class="flex items-center gap-3">
+<div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-[18px]">⌬</div>
+<div class="leading-tight">
+<span class="font-semibold text-[16px] block">Predict AI</span>
+<span class="text-[10px] text-gray-400 tracking-widest">SMART DISEASE SYSTEM</span>
+</div>
+<span class="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 ml-2">● Online</span>
+</div>
+<div class="flex gap-2">
+<a href="/pp" class="px-4 py-2 rounded-full bg-[#11141f] border border-[#1e2436] text-sm hover:bg-[#1a1f32]">← Symptom Check</a>
+<button id="historyBtn" class="px-4 py-2 rounded-full bg-[#11141f] border border-[#1e2436] text-sm hover:bg-[#1a1f32]">History</button>
+</div>
+</header>
+
+<div id="chatBox" class="flex-1 overflow-y-auto px-4 md:px-[20%] py-6 space-y-5">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shrink-0">⌬</div>
+<div class="ai-bubble chat-bubble p-4 text-[14.5px] text-gray-200">
+hi this is your AI doctor you can share your problems with me , i will help you to get out of it
+</div>
+</div>
+</div>
+
+<div id="typing" class="hidden px-4 md:px-[20%] pb-2">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold">⌬</div>
+<div class="ai-bubble p-4 px-5 rounded-full flex gap-1"><span class="dot w-2 h-2 bg-gray-400 rounded-full"></span><span class="dot w-2 h-2 bg-gray-400 rounded-full"></span><span class="dot w-2 h-2 bg-gray-400 rounded-full"></span></div>
+</div>
+</div>
+
+<div class="p-4 bg-[#080a0f] border-t border-[#1e2436] sticky bottom-0">
+<div class="max-w-3xl mx-auto">
+<div class="flex items-end gap-2 bg-[#11141f] border border-[#232a41] rounded-[26px] p-2 pl-4 shadow-2xl focus-within:border-indigo-500/50 transition">
+<textarea id="userInput" rows="1" placeholder="Message Predict AI..." class="flex-1 bg-transparent outline-none text-[15px] placeholder:text-gray-500 resize-none max-h-[120px] py-2"></textarea>
+<button id="micBtn" class="w-9 h-9 rounded-full bg-[#1a1f32] flex items-center justify-center hover:bg-[#232a41] border border-[#232a41]">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
+</button>
+<button id="sendBtn" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 font-bold">↑</button>
+</div>
+<p class="text-[11px] text-center text-gray-500 mt-3">Predict AI can make mistakes. Check important info.</p>
+</div>
+</div>
+
+<div id="historyModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-30 flex justify-end">
+<div class="w-full max-w-[380px] bg-[#0b0e18] border-l border-[#1e2436] h-full flex flex-col">
+<div class="p-5 border-b border-[#1e2436] flex justify-between items-center">
+<h3 class="font-semibold">Your AI Chats</h3>
+<button id="closeHistory" class="w-8 h-8 rounded-full bg-[#11141f] border border-[#1e2436]">✕</button>
+</div>
+<div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm text-gray-300"></div>
+<div class="p-4 border-t border-[#1e2436]">
+<button id="clearHistory" class="w-full py-2 rounded-full bg-[#11141f] border border-[#1e2436] text-sm text-red-400 hover:bg-red-500/10">Clear All Chats</button>
+</div>
+</div>
+</div>
+
+<script>
+const chatBox = document.getElementById('chatBox');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const typing = document.getElementById('typing');
+const micBtn = document.getElementById('micBtn');
+const historyBtn = document.getElementById('historyBtn');
+const historyModal = document.getElementById('historyModal');
+const closeHistory = document.getElementById('closeHistory');
+const historyList = document.getElementById('historyList');
+const clearHistory = document.getElementById('clearHistory');
+let chatHistory = JSON.parse(localStorage.getItem('predict_ai_chats') || '[]');
+function saveToHistory(userMsg, aiMsg){
+ chatHistory.push({user: userMsg, ai: aiMsg, time: new Date().toLocaleString()});
+ localStorage.setItem('predict_ai_chats', JSON.stringify(chatHistory));
+ renderHistory();
+}
+function renderHistory(){
+ if(chatHistory.length===0){ historyList.innerHTML='<p class="text-gray-500 text-center mt-10">No chats yet</p>'; return; }
+ historyList.innerHTML = chatHistory.map(c=>`
+  <div class="p-3 rounded-xl bg-[#11141f] border border-[#1e2436]">
+   <p class="text-[11px] text-gray-500 mb-1">${c.time}</p>
+   <p class="text-indigo-300"><b>You:</b> ${c.user.substring(0,80)}</p>
+   <p class="text-gray-300 mt-1"><b>AI:</b> ${c.ai.substring(0,120)}...</p>
+  </div>
+ `).reverse().join('');
+}
+function addMessage(text, isUser){
+ const div = document.createElement('div');
+ div.className = 'flex gap-3 ' + (isUser ? 'justify-end' : '');
+ div.innerHTML = isUser ? `<div class="user-bubble chat-bubble p-3.5 px-4 text-[14.5px]">${text.replace(/</g,"&lt;")}</div>` : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shrink-0">⌬</div><div class="ai-bubble chat-bubble p-4 text-[14.5px] text-gray-200">${text.replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>')}</div>`;
+ chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
+}
+async function sendMessage(){
+ const msg = userInput.value.trim(); if(!msg) return;
+ addMessage(msg, true); userInput.value = ''; userInput.style.height='auto';
+ typing.classList.remove('hidden'); chatBox.scrollTop = chatBox.scrollHeight;
+ try{
+   const res = await fetch('/api/ai-doctor-chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg})});
+   const data = await res.json(); typing.classList.add('hidden');
+   addMessage(data.reply, false); saveToHistory(msg, data.reply);
+ }catch(e){ typing.classList.add('hidden'); addMessage("Network error, fir se try karo.", false); }
+}
+sendBtn.onclick = sendMessage;
+userInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});
+userInput.addEventListener('input', ()=>{ userInput.style.height='auto'; userInput.style.height=userInput.scrollHeight+'px'; });
+micBtn.onclick = ()=>{
+ if(!('webkitSpeechRecognition' in window)){ alert("Voice not supported"); return; }
+ const rec = new webkitSpeechRecognition(); rec.lang='en-IN'; rec.start();
+ micBtn.innerHTML='<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>';
+ rec.onresult = (e)=>{ userInput.value = e.results[0][0].transcript; };
+ rec.onend = ()=>{ micBtn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>'; };
+};
+historyBtn.onclick = ()=>{ renderHistory(); historyModal.classList.remove('hidden'); };
+closeHistory.onclick = ()=> historyModal.classList.add('hidden');
+historyModal.onclick = (e)=>{ if(e.target===historyModal) historyModal.classList.add('hidden'); };
+clearHistory.onclick = ()=>{ if(confirm('Clear all?')){ chatHistory=[]; localStorage.removeItem('predict_ai_chats'); renderHistory(); }};
+renderHistory();
+</script>
+</body>
+</html>
