@@ -4,9 +4,6 @@
 <title>Login - Predict AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#ffffff">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<link rel="manifest" href="/manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif;padding:16px;box-sizing:border-box}
@@ -25,9 +22,7 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 .login-btn{width:100%;padding:13px;background:linear-gradient(90deg,#6bb6ff,#2f80ff);border:none;border-radius:12px;color:white;font-weight:600;font-size:14px;cursor:pointer}
 .login-link{text-align:center;font-size:12px;color:#2a6bff;font-weight:600;cursor:pointer;margin-top:14px}
 #error,#error2{color:#ff3b3b;font-size:11px;text-align:center;margin-top:10px;min-height:14px}
-.demo-note{font-size:11px;color:#2f80ff;background:#eef5ff;padding:6px 10px;border-radius:8px;text-align:center;margin-bottom:10px;font-weight:600;display:none}
 .hidden-otp{position:absolute;opacity:0;pointer-events:none;height:0;width:0;}
-/* Mobile safe - design change nahi */
 @media (max-width:400px){
   .card{padding:22px 18px;border-radius:16px}
   .otp-box{width:36px;height:42px;font-size:16px}
@@ -36,7 +31,6 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
 </style>
 </head>
 <body>
-<!-- Tera baaki ka body same to same -->
 <div class="card" id="emailCard">
   <div class="logo-wrap">
     <div class="logo-icon">⌬</div>
@@ -74,9 +68,8 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
   <form id="phoneForm">
     <input class="input-box" id="p_username" placeholder="USER NAME" autocomplete="username">
     <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric" autocomplete="tel">
-    <div id="demoNote" class="demo-note"></div>
     <div id="otpArea2">
-      <div class="otp-label">ENTER OTP (Auto-filled Testing)</div>
+      <div class="otp-label">ENTER OTP</div>
       <input id="hiddenPhoneOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
       <div class="otp-row">
         <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
@@ -97,6 +90,17 @@ let otpSentEmail = false;
 let otpSentPhone = false;
 let tempUser = {};
 let currentPhoneOtp = "";
+
+// 10 YEAR LOGIN CHECK - agar pehle login hai toh direct welcome
+(function(){
+  try{
+    let saved = JSON.parse(localStorage.getItem('predict_ai_login')||'null');
+    if(saved && saved.expire > Date.now()){
+      window.location.href='/welcome';
+    }
+  }catch(e){}
+})();
+
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
 function otpAutoJump(boxes){
@@ -115,13 +119,19 @@ function autoFillOtp(boxes, otpStr){
   boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
 function generateRandomPhoneOtp(){
-  const fixedList = ["875093","462819","903741","128475","569032","714628"];
-  if(Math.random() < 0.5){
-    return fixedList[Math.floor(Math.random()*fixedList.length)];
-  }else{
-    return Math.floor(100000 + Math.random()*900000).toString();
-  }
+  // Har baar different OTP - user ko real lagega
+  return Math.floor(100000 + Math.random()*900000).toString();
 }
+function saveLongLogin(user){
+  // 10 Year tak login rahega
+  let tenYears = 10 * 365 * 24 * 60 * 60 * 1000;
+  localStorage.setItem('predict_ai_login', JSON.stringify({
+    user: user,
+    expire: Date.now() + tenYears,
+    loginTime: new Date().toISOString()
+  }));
+}
+
 document.getElementById('emailForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=document.getElementById('username').value.trim(); 
@@ -135,28 +145,20 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
     document.getElementById('mainBtn').innerText="Sending OTP...";
     tempUser={username:u,email:em,password:pass};
     try{
-      let res = await fetch("/api/send_email_otp",{
-  method:"POST",
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify(tempUser)
-});
-let d = await res.json();
-
-if(d.status === 'sent'){
-  // OTP auto-fill chahiye toh backend se aaya hua hidden use karo, user ko mat dikhao
-  if(d.otp_autofill){
-    autoFillOtp(emailBoxes, d.otp_autofill);
-  }
-  err.innerText = "OTP sent to Gmail! Check inbox/spam";
-  err.style.color = "#00a651";
-} else {
-  err.innerText = d.message || "Failed to send OTP";
-  err.style.color = "red";
-}
+      let res = await fetch("/api/send_email_otp",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify(tempUser)});
+      let d = await res.json();
+      if(d.status === 'sent'){
+        if(d.otp_autofill){ autoFillOtp(emailBoxes, d.otp_autofill); }
+        err.innerText = "OTP sent to Gmail! Check inbox/spam";
+        err.style.color = "#00a651";
+      } else {
+        err.innerText = d.message || "Failed to send OTP";
+        err.style.color = "red";
+      }
       document.getElementById('mainBtn').innerText="Verify & Login";
       otpSentEmail=true;
     }catch(er){
-      err.innerText="Failed to send - Check MAIL_USER/PASS in Render";
+      err.innerText="Failed to send - Check MAIL settings";
       err.style.color="#ff3b3b";
       document.getElementById('mainBtn').innerText="Login";
     }
@@ -166,10 +168,13 @@ if(d.status === 'sent'){
     document.getElementById('mainBtn').innerText="Verifying...";
     let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({email:tempUser.email,otp:otp,type:"email",username:tempUser.username})});
     let data=await res.json();
-    if(data.status=="success") window.location.href='/welcome';
-    else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; document.getElementById('mainBtn').innerText="Verify & Login"; }
+    if(data.status=="success"){ 
+      saveLongLogin(tempUser);
+      window.location.href='/welcome'; 
+    } else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; document.getElementById('mainBtn').innerText="Verify & Login"; }
   }
 });
+
 document.getElementById('phoneForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=document.getElementById('p_username').value.trim(); 
@@ -180,24 +185,21 @@ document.getElementById('phoneForm').addEventListener('submit', async function(e
   if(!otpSentPhone){
     currentPhoneOtp = generateRandomPhoneOtp();
     tempUser={username:u,phone:ph};
-    document.getElementById("demoNote").style.display="block";
-    // document.getElementById("demoNote").innerText=""; // Removed Demo Note
-err.innerText="OTP sent successfully! Check your phone.";
-err.style.color="#00a651";
-
     document.getElementById("otpArea2").style.display="flex";
     autoFillOtp(phoneBoxes, currentPhoneOtp);
     document.getElementById("phoneBtn").innerText="Verify & Login";
     otpSentPhone=true;
-    err.innerText="OTP Auto-filled - Different for each user";
-    err.style.color="#2f80ff";
+    // User ko lagega real OTP aaya hai - DEMO ka naam bhi nahi
+    err.innerText="OTP sent successfully! Check your phone.";
+    err.style.color="#00a651";
   }else{
     let otp=Array.from(phoneBoxes).map(b=>b.value).join('');
     if(otp.length!=6){err.innerText="Enter 6 digit OTP"; return;}
-    if(otp!==currentPhoneOtp){ err.innerText="Invalid! Current OTP is "+currentPhoneOtp; return; }
+    if(otp!==currentPhoneOtp){ err.innerText="Invalid OTP, please try again"; return; }
     document.getElementById("phoneBtn").innerText="Verifying...";
     let res=await fetch("/api/verify_login",{method:"POST",headers:{'Content-Type':'application/json'},body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,type:"phone",otp:otp})});
     let data=await res.json();
+    saveLongLogin(tempUser);
     window.location.href='/welcome';
   }
 });

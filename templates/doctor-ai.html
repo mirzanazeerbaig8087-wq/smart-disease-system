@@ -25,7 +25,7 @@ body{font-family:'Inter', sans-serif; background:#080a0f; color:white;}
 <span class="font-semibold text-[16px] block">Predict AI</span>
 <span class="text-[10px] text-gray-400 tracking-widest">SMART DISEASE SYSTEM</span>
 </div>
-<span class="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 ml-2">● Online</span>
+<span class="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 ml-2">● Online - Gemini + Groq</span>
 </div>
 <div class="flex gap-2">
 <a href="/pp" class="px-4 py-2 rounded-full bg-[#11141f] border border-[#1e2436] text-sm hover:bg-[#1a1f32]">← Symptom Check</a>
@@ -37,7 +37,7 @@ body{font-family:'Inter', sans-serif; background:#080a0f; color:white;}
 <div class="flex gap-3">
 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shrink-0">⌬</div>
 <div class="ai-bubble chat-bubble p-4 text-[14.5px] text-gray-200">
-hi this is your AI doctor you can share your problems with me , i will help you to get out of it
+Hi! I am Predict AI Doctor. You can talk in Hindi, English, Hinglish, Marathi, Urdu - I will reply in same language! Share your problem.
 </div>
 </div>
 </div>
@@ -52,13 +52,13 @@ hi this is your AI doctor you can share your problems with me , i will help you 
 <div class="p-4 bg-[#080a0f] border-t border-[#1e2436] sticky bottom-0">
 <div class="max-w-3xl mx-auto">
 <div class="flex items-end gap-2 bg-[#11141f] border border-[#232a41] rounded-[26px] p-2 pl-4 shadow-2xl focus-within:border-indigo-500/50 transition">
-<textarea id="userInput" rows="1" placeholder="Message Predict AI..." class="flex-1 bg-transparent outline-none text-[15px] placeholder:text-gray-500 resize-none max-h-[120px] py-2"></textarea>
+<textarea id="userInput" rows="1" placeholder="Message Predict AI in any language..." class="flex-1 bg-transparent outline-none text-[15px] placeholder:text-gray-500 resize-none max-h-[120px] py-2"></textarea>
 <button id="micBtn" class="w-9 h-9 rounded-full bg-[#1a1f32] flex items-center justify-center hover:bg-[#232a41] border border-[#232a41]">
 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>
 </button>
 <button id="sendBtn" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 font-bold">↑</button>
 </div>
-<p class="text-[11px] text-center text-gray-500 mt-3">Predict AI can make mistakes. Check important info.</p>
+<p class="text-[11px] text-center text-gray-500 mt-3">Predict AI can make mistakes. Check important info. | Gemini + Groq Active</p>
 </div>
 </div>
 
@@ -114,21 +114,22 @@ async function sendMessage(){
  typing.classList.remove('hidden'); chatBox.scrollTop = chatBox.scrollHeight;
  try{
    const res = await fetch('/api/doctor_chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg})});
-   if(!res.ok) throw new Error('API failed '+res.status);
-   const data = await res.json(); typing.classList.add('hidden');
-   addMessage(data.reply, false); saveToHistory(msg, data.reply);
+   const data = await res.json(); 
+   typing.classList.add('hidden');
+   addMessage(data.reply || "No reply", false); 
+   saveToHistory(msg, data.reply);
  }catch(e){ 
    typing.classList.add('hidden'); 
-   console.error(e);
-   addMessage("Network error, please try again. (API: "+e.message+")", false); 
+   addMessage("Network error, please check Vercel keys (GEMINI + GROQ) and Redeploy!", false); 
  }
 }
 sendBtn.onclick = sendMessage;
 userInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});
 userInput.addEventListener('input', ()=>{ userInput.style.height='auto'; userInput.style.height=userInput.scrollHeight+'px'; });
 micBtn.onclick = ()=>{
- if(!('webkitSpeechRecognition' in window)){ alert("Voice not supported"); return; }
- const rec = new webkitSpeechRecognition(); rec.lang='en-IN'; rec.start();
+ if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){ alert("Voice not supported"); return; }
+ const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+ const rec = new SR(); rec.lang='en-IN'; rec.start();
  micBtn.innerHTML='<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>';
  rec.onresult = (e)=>{ userInput.value = e.results[0][0].transcript; };
  rec.onend = ()=>{ micBtn.innerHTML='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><line x1="12" y1="19" x2="12" y2="23"></line><line x1="8" y1="23" x2="16" y2="23"></line></svg>'; };

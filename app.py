@@ -12,7 +12,8 @@ otp_store = {}
 
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
+# ===== FIX 1: 10 YEAR LOGIN =====
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650) # 10 years = 3650 days
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_SECURE'] = False if os.getenv('FLASK_ENV') == 'development' else True
@@ -20,6 +21,10 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_NAME'] = 'smart_session'
 app.config['SESSION_COOKIE_DOMAIN'] = None
 app.config['SESSION_COOKIE_PATH'] = '/'
+
+@app.before_request
+def make_session_permanent():
+    session.permanent = True
 
 @app.route('/manifest.json')
 def manifest(): return send_from_directory('static', 'manifest.json')
@@ -357,48 +362,76 @@ def predict_route():
     session.permanent = True
     return redirect(url_for('result_page'))
 
-# ================= DOCTOR AI API - FIXED =================
+# ================= DOCTOR AI API - GEMINI + GROQ BOTH - NO CLASH =================
 @app.route('/api/doctor_chat', methods=['GET', 'POST'])
 def doctor_chat_api():
     if request.method == 'GET':
-        return jsonify({'status': 'Doctor AI API is running!', 'key_set': bool(os.getenv('GEMINI_API_KEY'))})
+        return jsonify({
+            'gemini': bool(os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')),
+            'groq': bool(os.getenv('GROQ_API_KEY')),
+            'status': 'Both active'
+        })
 
     try:
         data = request.get_json(force=True) or {}
-        user_msg = data.get('message', '').strip()
-        if not user_msg:
-            return jsonify({'reply': 'Bolo kya problem hai? Symptoms batao!'}), 200
+        msg = (data.get('message') or '').strip()
+        if not msg:
+            return jsonify({'reply': 'Please tell your symptoms'}), 200
 
-        gemini_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
-        
-        if gemini_key:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
-                payload = {
-                    "contents": [{"parts": [{"text": f"You are Predict AI, a caring AI doctor assistant. User says: '{user_msg}'. Reply in simple Hinglish (Hindi+English), friendly, 2-4 lines, give helpful advice. At end add: 'Note: AI advice only, consult real doctor.'"}]}]
-                }
-                r = requests.post(url, json=payload, timeout=25)
-                result = r.json()
-                print("GEMINI DEBUG:", result)
-                if 'candidates' in result and result['candidates']:
-                    ai_text = result['candidates'][0]['content']['parts'][0]['text']
-                    return jsonify({'reply': ai_text}), 200
-            except Exception as gem_err:
-                print("GEMINI ERROR:", gem_err)
+        msg_lower = msg.lower()
+        wants_english = any(x in msg_lower for x in ['use english', 'in english', 'speak english', 'english please', 'cant talk in hindi', 'cannot talk in hindi', 'talk in english'])
 
-        msg_lower = user_msg.lower()
-        if 'fever' in msg_lower or 'bukhar' in msg_lower:
-            reply = f"Tumne bola '{user_msg}'. Bukhar ke liye paani zyada piyo, rest karo. 4 din se zyada hai to CBC test karwao. Temp kitna hai? Note: AI advice only, consult real doctor."
-        elif 'headache' in msg_lower or 'sir dard' in msg_lower:
-            reply = "Sir dard ke liye paani piyo, mobile kam dekho, neend poori karo. Agar tez dard hai to doctor se milo. Kab se hai? Note: AI advice only."
+        GEMINI_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+        GROQ_KEY = os.getenv('GROQ_API_KEY')
+
+        if wants_english:
+            lang_rule = "User wants answer ONLY in ENGLISH. Reply in ENGLISH only."
         else:
-            reply = f"Samajh gaya: '{user_msg}'. Thoda aur detail batao - kab se hai, aur koi symptoms? Main help karunga. Note: Ye AI advice hai, doctor se milna zaroori hai."
+            lang_rule = f"Detect language of '{msg}'. If Hinglish->Hinglish, Hindi->Hindi, Marathi->Marathi, Urdu->Urdu, English->English. Reply in SAME language as user."
 
-        return jsonify({'reply': reply}), 200
+        # 1. TRY GEMINI FIRST
+        if GEMINI_KEY:
+            for model in ["gemini-1.5-flash", "gemini-pro"]:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_KEY}"
+                    prompt = f"{lang_rule} You are Predict AI, friendly Indian doctor. User: {msg}. Give helpful medical advice 4-5 lines, ask 1 follow-up. Do NOT start with 'Samajh gaya' or 'Tumne bola'. Give direct answer."
+                    r = requests.post(url, json={"contents":[{"parts":[{"text": prompt}]}], "generationConfig":{"temperature":0.7, "maxOutputTokens": 800}}, timeout=20)
+                    j = r.json()
+                    if 'candidates' in j and j['candidates']:
+                        print(f"GEMINI {model} SUCCESS")
+                        return jsonify({'reply': j['candidates'][0]['content']['parts'][0]['text']}), 200
+                    print("GEMINI ERROR:", j)
+                except Exception as e:
+                    print(f"Gemini {model} failed: {e}")
+                    continue
+
+        # 2. TRY GROQ SECOND (BACKUP - Llama 3.1 - Super Fast)
+        if GROQ_KEY:
+            try:
+                url = "https://api.groq.com/openai/v1/chat/completions"
+                headers = {"Authorization": f"Bearer {GROQ_KEY}", "Content-Type": "application/json"}
+                payload = {
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [
+                        {"role": "system", "content": f"You are Predict AI, friendly Indian doctor. {lang_rule} Give helpful medical advice, 4-5 lines."},
+                        {"role": "user", "content": msg}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 800
+                }
+                r = requests.post(url, json=payload, headers=headers, timeout=20)
+                j = r.json()
+                if 'choices' in j and j['choices']:
+                    print("GROQ SUCCESS")
+                    return jsonify({'reply': j['choices'][0]['message']['content']}), 200
+                print("GROQ ERROR:", j)
+            except Exception as e:
+                print("Groq failed:", e)
+
+        return jsonify({'reply': '⚠️ Both AI keys missing or failed! Vercel > Settings > Env Vars me GEMINI_API_KEY aur GROQ_API_KEY daalo aur Redeploy karo. Tab tak paani/ORS piyo aur doctor se milo.'}), 200
 
     except Exception as e:
-        print("DOCTOR API MAIN ERROR:", e)
-        return jsonify({'reply': f"Thoda sa issue aaya: {str(e)[:150]}. Fir se try karo!"}), 200
+        return jsonify({'reply': f"Error: {e}"}), 200
 
 if __name__=='__main__': 
     app.run(host='0.0.0.0',port=5000,debug=True)
