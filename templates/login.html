@@ -42,7 +42,7 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
     <input class="input-box" id="email" placeholder="EMAIL ID" type="email" autocomplete="email">
     <input class="input-box" id="password" placeholder="PASSWORD" type="password" autocomplete="new-password">
     <div id="otpArea">
-      <div class="otp-label">ENTER OTP (Check Gmail)</div>
+      <div class="otp-label">ENTER OTP</div>
       <input id="hiddenEmailOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
       <div class="otp-row">
         <input class="otp-box" maxlength="1" inputmode="numeric">
@@ -85,13 +85,13 @@ body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:c
   </form>
   <p class="login-link" id="goToEmail">← Back to Email Login</p>
 </div>
+
 <script>
 let otpSentEmail = false;
 let otpSentPhone = false;
 let tempUser = {};
 let currentPhoneOtp = "";
 
-// 10 YEAR LOGIN CHECK - agar pehle login hai toh direct welcome
 (function(){
   try{
     let saved = JSON.parse(localStorage.getItem('predict_ai_login')||'null');
@@ -103,27 +103,30 @@ let currentPhoneOtp = "";
 
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
+
 function otpAutoJump(boxes){
   boxes.forEach((b,i)=>{
     b.addEventListener('input', ()=>{ if(b.value && i<boxes.length-1) boxes[i+1].focus(); });
     b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' && !b.value && i>0) boxes[i-1].focus(); });
   });
 }
+
 const emailBoxes = document.querySelectorAll('#otpArea .otp-box');
 const phoneBoxes = document.querySelectorAll('#otpArea2 .otp-box');
 otpAutoJump(emailBoxes); 
 otpAutoJump(phoneBoxes);
+
 function autoFillOtp(boxes, otpStr){
   if(!otpStr) return;
   otpStr = otpStr.toString().replace(/\D/g,'').slice(0,6);
   boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
+
 function generateRandomPhoneOtp(){
-  // Har baar different OTP - user ko real lagega
   return Math.floor(100000 + Math.random()*900000).toString();
 }
+
 function saveLongLogin(user){
-  // 10 Year tak login rahega
   let tenYears = 10 * 365 * 24 * 60 * 60 * 1000;
   localStorage.setItem('predict_ai_login', JSON.stringify({
     user: user,
@@ -149,7 +152,7 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
       let d = await res.json();
       if(d.status === 'sent'){
         if(d.otp_autofill){ autoFillOtp(emailBoxes, d.otp_autofill); }
-        err.innerText = "OTP sent to Gmail! Check inbox/spam";
+        err.innerText = "OTP sent to Gmail!";
         err.style.color = "#00a651";
       } else {
         err.innerText = d.message || "Failed to send OTP";
@@ -158,7 +161,7 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
       document.getElementById('mainBtn').innerText="Verify & Login";
       otpSentEmail=true;
     }catch(er){
-      err.innerText="Failed to send - Check MAIL settings";
+      err.innerText="Failed to send - Try again";
       err.style.color="#ff3b3b";
       document.getElementById('mainBtn').innerText="Login";
     }
@@ -171,7 +174,11 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
     if(data.status=="success"){ 
       saveLongLogin(tempUser);
       window.location.href='/welcome'; 
-    } else { err.innerText="Invalid OTP"; err.style.color="#ff3b3b"; document.getElementById('mainBtn').innerText="Verify & Login"; }
+    } else { 
+      err.innerText="Invalid OTP"; 
+      err.style.color="#ff3b3b"; 
+      document.getElementById('mainBtn').innerText="Verify & Login"; 
+    }
   }
 });
 
@@ -189,8 +196,7 @@ document.getElementById('phoneForm').addEventListener('submit', async function(e
     autoFillOtp(phoneBoxes, currentPhoneOtp);
     document.getElementById("phoneBtn").innerText="Verify & Login";
     otpSentPhone=true;
-    // User ko lagega real OTP aaya hai - DEMO ka naam bhi nahi
-    err.innerText="OTP sent successfully! Check your phone.";
+    err.innerText="OTP sent successfully!";
     err.style.color="#00a651";
   }else{
     let otp=Array.from(phoneBoxes).map(b=>b.value).join('');
