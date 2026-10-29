@@ -113,10 +113,15 @@ async function sendMessage(){
  addMessage(msg, true); userInput.value = ''; userInput.style.height='auto';
  typing.classList.remove('hidden'); chatBox.scrollTop = chatBox.scrollHeight;
  try{
-   const res = await fetch('/api/ai-doctor-chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg})});
+   const res = await fetch('/api/doctor_chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg})});
+   if(!res.ok) throw new Error('API failed '+res.status);
    const data = await res.json(); typing.classList.add('hidden');
    addMessage(data.reply, false); saveToHistory(msg, data.reply);
- }catch(e){ typing.classList.add('hidden'); addMessage("Network error, fir se try karo.", false); }
+ }catch(e){ 
+   typing.classList.add('hidden'); 
+   console.error(e);
+   addMessage("Network error, fir se try karo. (API: "+e.message+")", false); 
+ }
 }
 sendBtn.onclick = sendMessage;
 userInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});

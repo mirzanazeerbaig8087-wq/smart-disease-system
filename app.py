@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory, Response
-import json, pickle, gzip, os, re, difflib, random, smtplib
+import json, pickle, gzip, os, re, difflib, random, smtplib, requests
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -15,7 +15,6 @@ app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-# FIX: Local pe False, Vercel pe True - warna login loop hoga
 app.config['SESSION_COOKIE_SECURE'] = False if os.getenv('FLASK_ENV') == 'development' else True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_NAME'] = 'smart_session'
@@ -144,7 +143,6 @@ try:
         with open('symptoms.pkl','rb') as f: all_symptoms=pickle.load(f)
 except Exception as e: print(f"Load error {e}")
 
-# ---- PAGES ----
 @app.route('/')
 def home(): 
     return redirect(url_for('cover_page'))
@@ -207,12 +205,10 @@ def patient_page(): return redirect(url_for('pp_page'))
 @app.route('/lp')
 def lp_page(): return render_template('lp.html') if os.path.exists('templates/lp.html') else redirect(url_for('pp_page'))
 
-# ---- NAYE 4 ROUTES - BOTTOM NAV KE LIYE - ANY SCREEN FIX ----
 @app.route('/emergency')
 def emergency_page():
     if not session.get('is_logged_in'):
         return redirect(url_for('login_page'))
-    # Agar file nahi bani to bhi crash nahi hoga
     if os.path.exists('templates/emergency.html'):
         return render_template('emergency.html')
     else:
@@ -259,7 +255,6 @@ def my_profile_page():
     else:
         return render_template('pp.html', symptoms=all_symptoms)
 
-# ----- OTP FUNCTION -----
 def send_otp_email(to_email, otp):
     try:
         email_user = os.getenv('EMAIL_USER') or os.getenv('MAIL_USER')
@@ -361,6 +356,49 @@ def predict_route():
     session.modified = True
     session.permanent = True
     return redirect(url_for('result_page'))
+
+# ================= DOCTOR AI API - FIXED =================
+@app.route('/api/doctor_chat', methods=['GET', 'POST'])
+def doctor_chat_api():
+    if request.method == 'GET':
+        return jsonify({'status': 'Doctor AI API is running!', 'key_set': bool(os.getenv('GEMINI_API_KEY'))})
+
+    try:
+        data = request.get_json(force=True) or {}
+        user_msg = data.get('message', '').strip()
+        if not user_msg:
+            return jsonify({'reply': 'Bolo kya problem hai? Symptoms batao!'}), 200
+
+        gemini_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+        
+        if gemini_key:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+                payload = {
+                    "contents": [{"parts": [{"text": f"You are Predict AI, a caring AI doctor assistant. User says: '{user_msg}'. Reply in simple Hinglish (Hindi+English), friendly, 2-4 lines, give helpful advice. At end add: 'Note: AI advice only, consult real doctor.'"}]}]
+                }
+                r = requests.post(url, json=payload, timeout=25)
+                result = r.json()
+                print("GEMINI DEBUG:", result)
+                if 'candidates' in result and result['candidates']:
+                    ai_text = result['candidates'][0]['content']['parts'][0]['text']
+                    return jsonify({'reply': ai_text}), 200
+            except Exception as gem_err:
+                print("GEMINI ERROR:", gem_err)
+
+        msg_lower = user_msg.lower()
+        if 'fever' in msg_lower or 'bukhar' in msg_lower:
+            reply = f"Tumne bola '{user_msg}'. Bukhar ke liye paani zyada piyo, rest karo. 4 din se zyada hai to CBC test karwao. Temp kitna hai? Note: AI advice only, consult real doctor."
+        elif 'headache' in msg_lower or 'sir dard' in msg_lower:
+            reply = "Sir dard ke liye paani piyo, mobile kam dekho, neend poori karo. Agar tez dard hai to doctor se milo. Kab se hai? Note: AI advice only."
+        else:
+            reply = f"Samajh gaya: '{user_msg}'. Thoda aur detail batao - kab se hai, aur koi symptoms? Main help karunga. Note: Ye AI advice hai, doctor se milna zaroori hai."
+
+        return jsonify({'reply': reply}), 200
+
+    except Exception as e:
+        print("DOCTOR API MAIN ERROR:", e)
+        return jsonify({'reply': f"Thoda sa issue aaya: {str(e)[:150]}. Fir se try karo!"}), 200
 
 if __name__=='__main__': 
     app.run(host='0.0.0.0',port=5000,debug=True)
