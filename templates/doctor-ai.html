@@ -120,7 +120,7 @@ async function sendMessage(){
  }catch(e){ 
    typing.classList.add('hidden'); 
    console.error(e);
-   addMessage("Network error, fir se try karo. (API: "+e.message+")", false); 
+   addMessage("Network error, please try again. (API: "+e.message+")", false); 
  }
 }
 sendBtn.onclick = sendMessage;
