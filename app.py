@@ -6,12 +6,17 @@ from datetime import datetime, timedelta
 import mysql.connector
 from mysql.connector import Error
 
+EMAIL_USER = os.getenv("MAIL_USER") or os.getenv("EMAIL_USER")
+EMAIL_PASS = os.getenv("MAIL_PASS") or os.getenv("EMAIL_PASS")
+otp_store = {}
+
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=365)
 app.config['SESSION_PERMANENT'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = True  # FIX: Vercel HTTPS = True karna hi padega
+# FIX: Local pe False, Vercel pe True - warna login loop hoga
+app.config['SESSION_COOKIE_SECURE'] = False if os.getenv('FLASK_ENV') == 'development' else True
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_NAME'] = 'smart_session'
 app.config['SESSION_COOKIE_DOMAIN'] = None
@@ -42,6 +47,7 @@ DB_CONFIG = {
     'database': os.getenv('DB_NAME', 'defaultdb'),
     'autocommit': True, 'connection_timeout': 10
 }
+
 def get_db_connection():
     try:
         if os.path.exists(CA_PATH) and os.path.getsize(CA_PATH) > 10:
@@ -97,6 +103,7 @@ def build_translator():
         trans[f"mujhe {s}"] = s
         trans[f"i have {s}"] = s
     return trans
+
 TRANSLATION_MAP = build_translator()
 
 def normalize(text, all_sym):
@@ -110,6 +117,7 @@ def normalize(text, all_sym):
         m = difflib.get_close_matches(t, all_sym, n=1, cutoff=0.55)
         if m: return m[0]
     return t
+
 def parse_symptoms(raw, all_sym):
     parts = re.split(r'[,;|\n]+', raw.lower())
     cleaned=[]
@@ -136,9 +144,7 @@ try:
         with open('symptoms.pkl','rb') as f: all_symptoms=pickle.load(f)
 except Exception as e: print(f"Load error {e}")
 
-otp_store = {}
-# ---- PAGES ---- FINAL FIXED ROUTES AS PER YOUR FLOW
-
+# ---- PAGES ----
 @app.route('/')
 def home(): 
     return redirect(url_for('cover_page'))
@@ -149,17 +155,14 @@ def cover_page():
 
 @app.route('/login')
 def login_page():
-    # Login hua hai toh login page kabhi mat dikhao, direct pp pe bhejo
     if session.get('is_logged_in'):
         return redirect(url_for('pp_page'))
     return render_template('login.html')
 
 @app.route('/welcome')
 def welcome_page():
-    # Login nahi hai toh login pe bhejo
     if not session.get('is_logged_in'):
         return redirect(url_for('login_page'))
-    # Agar welcome ek baar dikh chuka hai toh direct pp
     if session.get('welcome_shown'):
         return redirect(url_for('pp_page'))
     return render_template('welcome.html')
@@ -168,7 +171,6 @@ def welcome_page():
 def pp_page():
     if not session.get('is_logged_in'):
         return redirect(url_for('login_page'))
-    # Welcome abhi tak nahi dikha toh pehle welcome dikhao
     if not session.get('welcome_shown'):
         return redirect(url_for('welcome_page'))
     return render_template('pp.html', symptoms=all_symptoms)
@@ -193,47 +195,87 @@ def logout():
     session.clear()
     return redirect(url_for('cover_page'))
 
-# Mark welcome as shown - isko welcome page se call karna hai
 @app.route('/mark_welcome_done')
 def mark_welcome_done():
     session['welcome_shown'] = True
     session.modified = True
     return redirect(url_for('pp_page'))
 
-# FIX FOR 404 - YE 2 NAYE ROUTE ADD KIYE
 @app.route('/patient')
 def patient_page(): return redirect(url_for('pp_page'))
+
 @app.route('/lp')
 def lp_page(): return render_template('lp.html') if os.path.exists('templates/lp.html') else redirect(url_for('pp_page'))
 
-@app.route('/resultp')
-def result_page(): 
-    r=session.get('last_result',{})
-    if not r: return redirect(url_for('pp_page'))
-    return render_template('resultp.html', result=r)
-@app.route('/thankyou')
-def thankyou_page(): return render_template('thankyou.html')
-@app.route('/logout')
-def logout(): session.clear(); return redirect(url_for('cover_page'))
+# ---- NAYE 4 ROUTES - BOTTOM NAV KE LIYE - ANY SCREEN FIX ----
+@app.route('/emergency')
+def emergency_page():
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    # Agar file nahi bani to bhi crash nahi hoga
+    if os.path.exists('templates/emergency.html'):
+        return render_template('emergency.html')
+    else:
+        return render_template('pp.html', symptoms=all_symptoms)
+
+@app.route('/doctor-ai')
+@app.route('/doctor_ai')
+@app.route('/doctor')
+def doctor_ai_page():
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    if os.path.exists('templates/doctor_ai.html'):
+        return render_template('doctor_ai.html')
+    elif os.path.exists('templates/doctor-ai.html'):
+        return render_template('doctor-ai.html')
+    else:
+        return render_template('pp.html', symptoms=all_symptoms)
+
+@app.route('/wellbeing')
+@app.route('/well-being')
+@app.route('/well_being')
+def wellbeing_page():
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    if os.path.exists('templates/wellbeing.html'):
+        return render_template('wellbeing.html')
+    elif os.path.exists('templates/well_being.html'):
+        return render_template('well_being.html')
+    elif os.path.exists('templates/well-being.html'):
+        return render_template('well-being.html')
+    else:
+        return render_template('pp.html', symptoms=all_symptoms)
+
+@app.route('/my-profile')
+@app.route('/my_profile')
+@app.route('/profile')
+def my_profile_page():
+    if not session.get('is_logged_in'):
+        return redirect(url_for('login_page'))
+    if os.path.exists('templates/my_profile.html'):
+        return render_template('my_profile.html')
+    elif os.path.exists('templates/profile.html'):
+        return render_template('profile.html')
+    else:
+        return render_template('pp.html', symptoms=all_symptoms)
+
+# ----- OTP FUNCTION -----
 def send_otp_email(to_email, otp):
     try:
-        # Dono naam support karega - MAIL_ ya EMAIL_ jo bhi Vercel pe ho
-        EMAIL_USER = os.getenv('EMAIL_USER') or os.getenv('MAIL_USER')
-        EMAIL_PASS = os.getenv('EMAIL_PASS') or os.getenv('MAIL_PASS')
-        
-        if not EMAIL_USER or not EMAIL_PASS:
-            print("MAIL_USER/MAIL_PASS missing in Vercel Env")
+        email_user = os.getenv('EMAIL_USER') or os.getenv('MAIL_USER')
+        email_pass = os.getenv('EMAIL_PASS') or os.getenv('MAIL_PASS')
+        if not email_user or not email_pass:
+            print("MAIL_USER/MAIL_PASS missing")
             return False
-            
+        body = f"Your Smart Disease System OTP is: {otp}\n\nValid for 5 minutes."
         msg = MIMEMultipart()
-        msg['From'] = EMAIL_USER
+        msg['From'] = email_user
         msg['To'] = to_email
-        msg['Subject'] = f"Your OTP is {otp} - Smart Disease System"
-        body = f"Your OTP is {otp}\nValid for 5 minutes.\n- Smart Disease System"
+        msg['Subject'] = "Your OTP Code"
         msg.attach(MIMEText(body, 'plain'))
         server = smtplib.SMTP('smtp.gmail.com', 587, timeout=15)
         server.starttls()
-        server.login(EMAIL_USER, EMAIL_PASS)
+        server.login(email_user, email_pass)
         server.send_message(msg)
         server.quit()
         print(f"Email sent to {to_email}")
@@ -258,8 +300,9 @@ def api_send_otp():
     if phone: otp_store[phone] = {'otp': otp, 'time': datetime.now()}
     print(f"Generated OTP {otp} for {identifier}")
     if email:
-        send_otp_email(email, otp)
-    # Demo word kabhi nahi bhejna
+        email_ok = send_otp_email(email, otp)
+        if not email_ok:
+            return jsonify({'status': 'failed','message': 'wrong password, this email does not exist.'}), 200
     return jsonify({'status':'sent','message':'OTP sent successfully','otp_autofill': otp})
 
 @app.route('/api/verify_login', methods=['POST'])
@@ -281,6 +324,7 @@ def api_verify_login():
     session['username']=data.get('username','User')
     session['user_email']=email
     session['has_seen_welcome']=False
+    session['welcome_shown']=False
     session.modified = True
     otp_store.pop(identifier, None)
     try:
@@ -312,11 +356,11 @@ def predict_route():
         dname="General Checkup"; dinfo={"Description":"Consult doctor","Diet":"Balanced","Exercise":"Walk","Precautions":"Doctor","Lab_Tests":["CBC"],"Specialist":"General"}; conf=40
     lab = dinfo.get('Lab_Tests') or ["CBC"]
     if isinstance(lab, str): lab = [s.strip() for s in re.split(r',|;', lab) if s.strip()]
-    result = {'disease': dname,'confidence': round(float(conf), 2),'description': dinfo.get('Description',''),'diet': dinfo.get('Diet',''),'exercise': dinfo.get('Exercise',''),'precaution': dinfo.get('Precautions',''),'lab_tests': lab,'doctor': dinfo.get('Specialist','General'),'symptoms': ", ".join(cleaned),'original_input': raw,'patient_name': request.form.get('patient_name') or session.get('username','Patient'),'age': request.form.get('age') or "N/A",'gender': request.form.get('gender') or "N/A",'date': datetime.now().strftime("%d-%m-%Y %H:%M")}
-    
+    result = {'disease': dname,'confidence': round(float(conf), 2),'description': dinfo.get('Description',''),'diet': dinfo.get('Diet',''),'exercise': dinfo.get('Exercise',''),'precaution': dinfo.get('Precautions',''),'lab_tests': lab,'doctor': dinfo.get('Specialist','General'),'symptoms': ", ".join(cleaned),'original_input': raw,'patient_name': request.form.get('patient_name') or session.get('username','Patient'),'age': request.form.get('age') or "N/A",'gender': request.form.get('gender') or "N/A",'date': datetime.now().strftime("%d-%m-%Y %H:%M"),'duration': request.form.get('duration') or "N/A"}
     session['last_result'] = result
-    session.modified = True   # <-- YE LINE SABSE ZARURI HAI, isi se fix hoga
+    session.modified = True
     session.permanent = True
     return redirect(url_for('result_page'))
 
-if __name__=='__main__': app.run(host='0.0.0.0',port=5000,debug=True)
+if __name__=='__main__': 
+    app.run(host='0.0.0.0',port=5000,debug=True)
