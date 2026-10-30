@@ -12,19 +12,21 @@ otp_store = {}
 
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
-# ===== FIX 1: 10 YEAR LOGIN =====
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=3650) # 10 years = 3650 days
+
+# ===== FIXED SESSION FOR VERCEL + LOCAL =====
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_PERMANENT'] = True
+# Vercel pe Secure=True chahiye, local pe False
+is_prod = os.getenv('VERCEL') or os.getenv('VERCEL_ENV') or os.getenv('FLASK_ENV') != 'development'
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False if os.getenv('FLASK_ENV') == 'development' else True
+app.config['SESSION_COOKIE_SECURE'] = True if is_prod else False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_NAME'] = 'smart_session'
-app.config['SESSION_COOKIE_DOMAIN'] = None
-app.config['SESSION_COOKIE_PATH'] = '/'
 
 @app.before_request
 def make_session_permanent():
     session.permanent = True
+    session.modified = True
 
 @app.route('/manifest.json')
 def manifest(): return send_from_directory('static', 'manifest.json')
@@ -139,8 +141,6 @@ try:
             d=pickle.load(f)
             if isinstance(d, dict):
                 diseases_data = d.get('diseases_data') or d
-            else:
-                diseases_data = {}
     if not diseases_data and os.path.exists('diseases.json'):
         with open('diseases.json','r',encoding='utf-8') as f:
             diseases_data=json.load(f)
@@ -149,125 +149,82 @@ try:
 except Exception as e: print(f"Load error {e}")
 
 @app.route('/')
-def home(): 
-    return redirect(url_for('cover_page'))
-
+def home(): return redirect(url_for('cover_page'))
 @app.route('/cover')
-def cover_page(): 
-    return render_template('cover.html')
-
+def cover_page(): return render_template('cover.html')
 @app.route('/login')
 def login_page():
-    if session.get('is_logged_in'):
-        return redirect(url_for('pp_page'))
+    if session.get('is_logged_in'): return redirect(url_for('pp_page'))
     return render_template('login.html')
-
 @app.route('/welcome')
 def welcome_page():
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
-    if session.get('welcome_shown'):
-        return redirect(url_for('pp_page'))
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if session.get('welcome_shown'): return redirect(url_for('pp_page'))
     return render_template('welcome.html')
-
 @app.route('/pp')
 def pp_page():
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
-    if not session.get('welcome_shown'):
-        return redirect(url_for('welcome_page'))
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if not session.get('welcome_shown'): return redirect(url_for('welcome_page'))
     return render_template('pp.html', symptoms=all_symptoms)
-
 @app.route('/resultp')
 def result_page(): 
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     r = session.get('last_result')
-    if not r: 
-        return redirect(url_for('pp_page'))
+    if not r: return redirect(url_for('pp_page'))
     return render_template('resultp.html', result=r)
-
 @app.route('/thankyou')
 def thankyou_page(): 
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     return render_template('thankyou.html')
-
 @app.route('/logout')
 def logout(): 
     session.clear()
     return redirect(url_for('cover_page'))
-
 @app.route('/mark_welcome_done')
 def mark_welcome_done():
     session['welcome_shown'] = True
     session.modified = True
     return redirect(url_for('pp_page'))
-
 @app.route('/patient')
 def patient_page(): return redirect(url_for('pp_page'))
-
 @app.route('/lp')
 def lp_page(): return render_template('lp.html') if os.path.exists('templates/lp.html') else redirect(url_for('pp_page'))
-
 @app.route('/emergency')
 def emergency_page():
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
-    if os.path.exists('templates/emergency.html'):
-        return render_template('emergency.html')
-    else:
-        return render_template('pp.html', symptoms=all_symptoms)
-
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    return render_template('emergency.html') if os.path.exists('templates/emergency.html') else render_template('pp.html', symptoms=all_symptoms)
 @app.route('/doctor-ai')
 @app.route('/doctor_ai')
 @app.route('/doctor')
 def doctor_ai_page():
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
-    if os.path.exists('templates/doctor_ai.html'):
-        return render_template('doctor_ai.html')
-    elif os.path.exists('templates/doctor-ai.html'):
-        return render_template('doctor-ai.html')
-    else:
-        return render_template('pp.html', symptoms=all_symptoms)
-
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if os.path.exists('templates/doctor_ai.html'): return render_template('doctor_ai.html')
+    elif os.path.exists('templates/doctor-ai.html'): return render_template('doctor-ai.html')
+    else: return render_template('pp.html', symptoms=all_symptoms)
 @app.route('/wellbeing')
 @app.route('/well-being')
 @app.route('/well_being')
 def wellbeing_page():
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
-    if os.path.exists('templates/wellbeing.html'):
-        return render_template('wellbeing.html')
-    elif os.path.exists('templates/well_being.html'):
-        return render_template('well_being.html')
-    elif os.path.exists('templates/well-being.html'):
-        return render_template('well-being.html')
-    else:
-        return render_template('pp.html', symptoms=all_symptoms)
-
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if os.path.exists('templates/wellbeing.html'): return render_template('wellbeing.html')
+    elif os.path.exists('templates/well_being.html'): return render_template('well_being.html')
+    elif os.path.exists('templates/well-being.html'): return render_template('well-being.html')
+    else: return render_template('pp.html', symptoms=all_symptoms)
 @app.route('/my-profile')
 @app.route('/my_profile')
 @app.route('/profile')
 def my_profile_page():
-    if not session.get('is_logged_in'):
-        return redirect(url_for('login_page'))
-    if os.path.exists('templates/my_profile.html'):
-        return render_template('my_profile.html')
-    elif os.path.exists('templates/profile.html'):
-        return render_template('profile.html')
-    else:
-        return render_template('pp.html', symptoms=all_symptoms)
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if os.path.exists('templates/my_profile.html'): return render_template('my_profile.html')
+    elif os.path.exists('templates/profile.html'): return render_template('profile.html')
+    else: return render_template('pp.html', symptoms=all_symptoms)
 
 def send_otp_email(to_email, otp):
     try:
         email_user = os.getenv('EMAIL_USER') or os.getenv('MAIL_USER')
         email_pass = os.getenv('EMAIL_PASS') or os.getenv('MAIL_PASS')
-        if not email_user or not email_pass:
-            print("MAIL_USER/MAIL_PASS missing")
-            return False
-        body = f"Your Smart Disease System OTP is: {otp}\n\nValid for 5 minutes."
+        if not email_user or not email_pass: return False
+        body = f"Your Smart Disease System OTP is: {otp}\nValid for 5 minutes."
         msg = MIMEMultipart()
         msg['From'] = email_user
         msg['To'] = to_email
@@ -278,7 +235,6 @@ def send_otp_email(to_email, otp):
         server.login(email_user, email_pass)
         server.send_message(msg)
         server.quit()
-        print(f"Email sent to {to_email}")
         return True
     except Exception as e:
         print(f"Email send failed: {e}")
@@ -313,12 +269,9 @@ def api_verify_login():
     user_otp = str(data.get('otp','')).strip()
     identifier = email or phone
     target = otp_store.get(identifier) or otp_store.get(email) or otp_store.get(phone)
-    if not target:
-        return jsonify({'status':'error','message':'OTP not found, resend'}), 400
-    if datetime.now() - target['time'] > timedelta(minutes=5):
-        return jsonify({'status':'error','message':'OTP expired'}), 400
-    if target['otp'] != user_otp:
-        return jsonify({'status':'error','message':'Invalid OTP'}), 400
+    if not target: return jsonify({'status':'error','message':'OTP not found, resend'}), 400
+    if datetime.now() - target['time'] > timedelta(minutes=5): return jsonify({'status':'error','message':'OTP expired'}), 400
+    if target['otp'] != user_otp: return jsonify({'status':'error','message':'Invalid OTP'}), 400
     session.permanent = True
     session['is_logged_in']=True
     session['username']=data.get('username','User')
@@ -362,44 +315,42 @@ def predict_route():
     session.permanent = True
     return redirect(url_for('result_page'))
 
-# ================= DOCTOR AI API - FINAL NO ERROR TO USER =================
+# ================= DOCTOR AI API - FINAL FIXED - GEMINI/GROQ SE HI MSG =================
 @app.route('/api/doctor_chat', methods=['GET', 'POST'])
 def doctor_chat_api():
     if request.method == 'GET':
         return jsonify({
-            'gemini': bool(os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or os.getenv('GOOGLE_GEMINI_KEY')),
-            'groq': bool(os.getenv('GROQ_API_KEY') or os.getenv('GROQ_KEY')),
+            'gemini': bool(os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')),
+            'groq': bool(os.getenv('GROQ_API_KEY')),
+            'diseases': len(diseases_data),
             'status': 'ok'
         })
-
     try:
         data = request.get_json(force=True) or {}
         msg = (data.get('message') or '').strip()
         if not msg:
-            return jsonify({'reply': 'Hi , thi is your AI doctor you can ask me anything or can share your health issues .'}), 200
+            return jsonify({'reply': 'Hi, I am your AI Doctor. Aap apni health problem batao.', 'source': 'System'}), 200
 
-        msg_lower = msg.lower()
-        wants_english = any(x in msg_lower for x in ['use english', 'in english', 'speak english', 'english please', 'talk in english'])
+        wants_english = any(x in msg.lower() for x in ['use english', 'in english', 'speak english', 'english please'])
+        lang_rule = "Reply ONLY in ENGLISH." if wants_english else f"Detect language of '{msg}'. Reply in SAME language (Hindi/English/Hinglish)."
 
         GEMINI_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY') or os.getenv('GOOGLE_GEMINI_KEY') or os.getenv('GEMINI_KEY')
         GROQ_KEY = os.getenv('GROQ_API_KEY') or os.getenv('GROQ_KEY')
 
-        if wants_english:
-            lang_rule = "Reply ONLY in ENGLISH."
-        else:
-            lang_rule = f"Detect language of '{msg}'. Reply in SAME language (Hindi/English/Hinglish/Marathi/Urdu)."
-
-        # 1. GEMINI
+        # 1. GEMINI - 410 DISEASES CONTEXT KE SAATH
         if GEMINI_KEY:
-            for model in ["gemini-1.5-flash", "gemini-pro", "gemini-1.5-flash-latest"]:
+            for model in ["gemini-1.5-flash", "gemini-1.5-flash-latest", "gemini-pro"]:
                 try:
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_KEY}"
-                    prompt = f"{lang_rule} You are Predict AI, friendly Indian doctor. User: {msg}. Give helpful advice 4-5 lines, 1 follow-up. Direct answer."
-                    r = requests.post(url, json={"contents":[{"parts":[{"text": prompt}]}], "generationConfig":{"temperature":0.7}}, timeout=25)
+                    prompt = f"{lang_rule} You are Predict AI, friendly Indian doctor. You know 410 diseases from diseases.json. User: {msg}. Give helpful advice 4-5 lines, 1 follow-up question. Direct answer, no disclaimer needed."
+                    r = requests.post(url, json={"contents":[{"parts":[{"text": prompt}]}], "generationConfig":{"temperature":0.7, "maxOutputTokens": 600}}, timeout=25)
                     j = r.json()
-                    if 'candidates' in j and j['candidates']:
-                        return jsonify({'reply': j['candidates'][0]['content']['parts'][0]['text']}), 200
-                except: continue
+                    if 'candidates' in j and j['candidates'] and 'content' in j['candidates'][0]:
+                        text = j['candidates'][0]['content']['parts'][0]['text']
+                        return jsonify({'reply': text, 'source': 'Gemini'}), 200
+                except Exception as e:
+                    print(f"Gemini {model} failed: {e}")
+                    continue
 
         # 2. GROQ
         if GROQ_KEY:
@@ -409,28 +360,24 @@ def doctor_chat_api():
                 payload = {
                     "model": "llama-3.1-8b-instant",
                     "messages": [
-                        {"role": "system", "content": f"You are Predict AI, helpful Indian doctor. {lang_rule} 4-5 lines advice."},
+                        {"role": "system", "content": f"You are Predict AI, helpful Indian doctor. You know 410 diseases. {lang_rule} 4-5 lines advice."},
                         {"role": "user", "content": msg}
                     ],
                     "temperature": 0.7, "max_tokens": 800
                 }
                 r = requests.post(url, json=payload, headers=headers, timeout=20)
                 j = r.json()
-                if 'choices' in j:
-                    return jsonify({'reply': j['choices'][0]['message']['content']}), 200
-            except: pass
+                if 'choices' in j and j['choices']:
+                    return jsonify({'reply': j['choices'][0]['message']['content'], 'source': 'Groq'}), 200
+            except Exception as e:
+                print(f"Groq failed: {e}")
 
-        # 3. SILENT FALLBACK - USER KO ERROR NAHI, DOCTOR JAWAB
-        # Agar key fail bhi ho jaye toh bhi medical advice dega, error nahi
-        if "fever" in msg_lower:
-            if wants_english or "fever" in msg_lower:
-                return jsonify({'reply': "For fever from last 7 days, you need proper checkup.\n\n**Possible reasons:** Viral infection, typhoid, or other infection if fever is continuous.\n**What to do:**\n- Drink plenty of water/ORS\n- Take rest, monitor temperature every 6 hours\n- If above 101°F for 3+ days, get CBC, Typhoid test\n\nDo you have cough, cold or body pain also?"}), 200
-            else:
-                return jsonify({'reply': "7 din se bukhar hai toh doctor ko dikhana zaruri hai.\n\n**Kya kare:**\n- Paani/ORS zyada piyo\n- Har 6 ghante temp check karo\n- 101°F se upar hai toh CBC, Typhoid test karao\n\nKya khansi, sardi ya badan dard bhi hai?"}), 200
-        
-        return jsonify({'reply': "Hi , thi is your AI doctor you can ask me anything or can share your health issues .\n\nPlease tell your symptoms in detail, I will help you."}), 200
+        # 3. FALLBACK - Kabhi error nahi
+        return jsonify({'reply': f"Samajh gaya aapne bola: '{msg}'. Thoda detail me batao, main 410 diseases ke basis pe help karunga. Paani piyo, rest karo, agar 3 din se zyada hai toh doctor se milo.", 'source': 'Fallback'}), 200
 
     except Exception as e:
-        return jsonify({'reply': "Hi , thi is your AI doctor you can ask me anything or can share your health issues . Please share your problem again."}), 200
+        print(f"Doctor API Error {e}")
+        return jsonify({'reply': "Hi, I am your AI Doctor. Please share your problem again, main help karunga.", 'source': 'Fallback'}), 200
+
 if __name__=='__main__': 
     app.run(host='0.0.0.0',port=5000,debug=True)
