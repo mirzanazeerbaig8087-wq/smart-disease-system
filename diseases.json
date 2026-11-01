@@ -1,8 +1,8 @@
 {
   "Cholera": {
-    "Description": "Cholera is acute bacterial diarrhea by Vibrio cholerae via contaminated water causing severe rice water stools dehydration. CAUSES: Contaminated water food poor sanitation",
-    "Symptoms": "watery diarrhea, rice water stools, profuse diarrhea, vomiting, dehydration, dry mouth, excessive thirst, sunken eyes, muscle cramps, low blood pressure, dizziness, abdominal cramps, weakness, rapid heart rate, low urine output, loss of skin turgor",
-    "Key_Symptoms": "rice water stools, profuse watery diarrhea, vomiting, rapid dehydration, muscle cramps, low blood pressure, sunken eyes",
+    "Description": "Cholera is acute bacterial diarrhea by Vibrio cholerae via contawatery diarrhea, rice water stools, prminated water causing severe rice water stools dehydration. CAUSES: Contaminated water food poor sanitation",
+    "Symptoms": "ofuse diarrhea, vomiting, dehydration, dry mouth, excessive thirst, sunken eyes, muscle cramps, low blood pressure, dizziness, abdominal cramps, weakness, rapid heart rate, low urine output, loss of skin turgor",
+    "Key_Symptoms": "rice water stools, profuse watery diarrhea, vomiting, rapid muscle cramps, low blood pressure, sunken eyes, rapid dehydration",
     "Precautions": "For Cholera: Drink boiled RO chlorinated water, avoid street food cut fruits, wash hands before eating after toilet, ORS immediately after each stool, vaccination in endemic, maintain sanitation, early hospital if profuse",
     "Diet": "Diet for Cholera: ORS after each stool 3-5L coconut water, then curd rice khichdi banana when vomiting stops, avoid oily spicy dairy, small frequent meals, include curd",
     "Exercise": "Exercise for Cholera: Complete rest during diarrhea dehydration, no exertion until stools normal and hydrated 2-3 days, light walk after",
