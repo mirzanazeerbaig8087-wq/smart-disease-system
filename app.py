@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for, send_from_directory, Response
-import json, pickle, gzip, os, re, difflib, random, smtplib, requests
+import json, pickle, gzip, os, re, difflib, random, smtplib, requests, threading, base64
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
@@ -12,7 +12,6 @@ otp_store = {}
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
 
-# ===== 30 DAYS LOGIN + UPLOAD FOLDER =====
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_COOKIE_NAME'] = 'smart_session'
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -22,7 +21,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_FOLDER = os.path.join(BASE_DIR, 'static', 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-ALLOWED_EXT = {'png','jpg','jpeg','pdf'}
+ALLOWED_EXT = {'png','jpg','jpeg','pdf','webp'}
 
 @app.before_request
 def make_session_permanent():
@@ -37,9 +36,8 @@ def sw(): return send_from_directory('static', 'sw.js')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# ===== 700+ TRANSLATOR MAP - FINAL =====
+# ===== 700+ TRANSLATOR =====
 def build_translator():
-    # 100+ English symptoms x 7-8 Hindi variants = 700+
     base = {
         "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","halka bukhar","bukhar thand","thand ke sath bukhar","kapkapahat","fever","high fever","bukhar hai"],
         "headache": ["sir dard","sar dard","sir me dard","adha sir dard","sir bhari","migraine","headache","sir dard hai"],
@@ -63,52 +61,15 @@ def build_translator():
         "itching": ["khujli","kharish","khujali","itching","khujli hai"],
         "rash": ["daane","laal daane","rash","daane hai"],
         "swelling": ["soojan","sujan","pair me soojan","swelling","soojan hai"],
+        "acne": ["acne","muhase","chehre pe daane","pimple","pimples","acne hai","muhase hai"],
         "numbness": ["sunn hona","haath sunn","pair sunn","numbness"],
-        "tingling": ["jhanjhanahat","tingling","haath me jhanjhan"],
-        "palpitations": ["dil ki dhadkan tez","palpitations","dil tez dhadakna"],
-        "rapid heartbeat": ["dil tez","rapid heartbeat","heartbeat fast"],
-        "wheezing": ["seeti wali saans","wheezing","saans me seeti"],
-        "night sweats": ["raat me pasina","night sweats","raat ko pasina"],
-        "shivering": ["kapkapi","thand se kaapna","shivering","kaap raha"],
-        "tremor": ["kampan","haath kaapna","tremor"],
-        "seizure": ["daura","mirgi ka daura","seizure","jhatka"],
-        "fainting": ["behosh","chakkar kha ke girna","fainting"],
-        "memory loss": ["yaad bhoolna","memory loss","bhoolne ki bimari"],
-        "confusion": ["ghabrahat","confusion","samajh nahi aana"],
-        "depression": ["udaasi","depression","man udaas","tension"],
-        "anxiety": ["ghabrahat","bechaini","anxiety","dar lagna"],
-        "insomnia": ["neend nahi","neend kam","insomnia","neend nahi aati"],
-        "blurred vision": ["dhundla dikhna","blurred vision","aankh dhundli"],
-        "red eyes": ["laal aankh","aankh laal","red eyes"],
-        "eye pain": ["aankh me dard","eye pain","aankh dukhna"],
-        "ear pain": ["kaan me dard","ear pain","kaan dukhna"],
-        "hearing loss": ["sunai kam","sunna band","hearing loss"],
-        "nosebleed": ["naak se khoon","nosebleed","naak se khoon aana"],
-        "loss of smell": ["sunghna band","smell nahi aana","loss of smell"],
-        "toothache": ["daant dard","daat me dard","toothache"],
-        "neck stiffness": ["gardan akadna","neck stiffness","gardan me dard"],
-        "hair loss": ["baal jhadna","baal girna","hair loss"],
-        "swollen glands": ["giltyan","gale me gilty","swollen glands"],
-        "blood in stool": ["potty me khoon","khoon ki potty","blood in stool"],
+        "tingling": ["jhanjhanahat","tingling"],
+        "palpitations": ["dil ki dhadkan tez","palpitations"],
+        "wheezing": ["seeti wali saans","wheezing"],
         "yellow skin": ["peela padna","peeli chamdi","yellow skin","piliya"],
-        "pale skin": ["peela padna","pale skin","khoon ki kami"],
-        "acidity": ["khatta paani","jalan","acidity","pet me jalan"],
-        "indigestion": ["hazam nahi","bad-hazmi","indigestion"],
-        "burning urination": ["peshaab me jalan","jalan ke sath peshaab","burning urination"],
-        "frequent urination": ["baar baar peshaab","frequent urination","peshaab baar baar"],
-        "excessive thirst": ["bahut pyaas","pyaas zyada","excessive thirst"],
-        "dark urine": ["kaala peshaab","gehra peshaab","dark urine"],
-        "blood in urine": ["peshaab me khoon","blood in urine","peshaab me khoon aana"],
-        "hiccups": ["hichki","hichki lagna","hiccups"],
-        "snoring": ["kharrate","kharate lena","snoring"],
-        "yellow eyes": ["aankh peeli","yellow eyes","piliya aankh"],
-        "liver lump": ["liver me gath","pet me gath","liver lump"],
-        "brittle nails": ["nakhun tootna","brittle nails","nakhun kharab"],
-        "double vision": ["do do dikhna","double vision"],
-        "loss of taste": ["swaad nahi","taste nahi","loss of taste"],
-        "dry mouth": ["munh sukhna","dry mouth","munh sukha"],
-        "mouth ulcer": ["munh me chhale","chhale","mouth ulcer"],
-        "bleeding gums": ["masudo se khoon","bleeding gums","masudo me khoon"],
+        "acidity": ["khatta paani","acidity"],
+        "burning urination": ["peshaab me jalan","burning urination"],
+        "blood in urine": ["peshaab me khoon","blood in urine"],
     }
     trans = {}
     prefixes = ["", "mujhe ", "mere ko ", "mujhko ", "muje "]
@@ -122,13 +83,11 @@ def build_translator():
                     key = f"{pre}{h}{suf}".strip()
                     key = re.sub(r'\s+', ' ', key)
                     if len(key)>1: trans[key]=eng
-    # Extra english variations
-    extra = ["fever","high fever","low fever","cough","dry cough","wet cough","cold","runny nose","sore throat","headache","migraine","dizziness","fatigue","weakness","body pain","muscle pain","joint pain","knee pain","back pain","chest pain","abdominal pain","stomach pain","nausea","vomiting","diarrhea","constipation","loss of appetite","weight loss","weight gain","burning urination","frequent urination","blood in urine","itching","rash","swelling","numbness","tingling","shortness of breath","wheezing","palpitations","anxiety","depression","insomnia","blurred vision","red eyes","ear pain","nosebleed","toothache","hair loss","yellow skin","acidity","hiccups","snoring"]
+    extra = ["fever","cough","cold","sore throat","headache","acne","pimple","rash","itching","swelling","chest pain","abdominal pain","vomiting","diarrhea","burning urination","yellow skin","acidity"]
     for s in extra:
         trans[s]=s
         trans[f"i have {s}"]=s
-        trans[f"mujhe {s} hai"]=s
-    print(f"Translator built {len(trans)} entries")  # ~800+
+    print(f"Translator built {len(trans)}")
     return trans
 
 TRANSLATION_MAP = build_translator()
@@ -186,13 +145,60 @@ def get_field(info, keys, default=""):
             if ik.lower()==k.lower() and info[ik]: return info[ik]
     return default
 
-def generate_ai_details(disease_name, symptoms_list):
+# ===== AI IMAGE ANALYSIS - NO DATASET, ONLY GEMINI VISION =====
+def analyze_medical_image(image_path):
+    GEMINI_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
+    if not GEMINI_KEY:
+        print("GEMINI_KEY missing for image analysis")
+        return None
+    try:
+        with open(image_path, "rb") as f:
+            img_b64 = base64.b64encode(f.read()).decode('utf-8')
+        ext = image_path.split('.')[-1].lower()
+        mime = "image/jpeg" if ext in ["jpg","jpeg"] else "image/png" if ext=="png" else "image/webp" if ext=="webp" else "image/jpeg"
+        
+        prompt = """
+        You are expert medical AI. Analyze this image carefully.
+        It can be: lab report, X-ray, sonography, prescription, skin photo, acne face, rash, swelling, body part, wound, eye, etc.
+        Tasks:
+        1. What do you see? Describe observation in 2-3 lines.
+        2. Extract visible symptoms/problems (e.g., acne, pimple, rash, swelling, redness, wound, jaundice, etc) - give comma separated English symptoms.
+        3. If lab report/X-ray, read values and mention abnormal findings.
+        4. Give possible conditions.
+        Return ONLY JSON like:
+        {"observation": "2-3 lines what you see", "observed_symptoms": ["acne","redness","swelling"], "possible_conditions": ["acne vulgaris"], "severity": "mild/moderate/severe", "lab_findings": "if any"}
+        """
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
+        payload = {
+            "contents": [{"parts": [{"text": prompt}, {"inline_data": {"mime_type": mime, "data": img_b64}}]}],
+            "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1000}
+        }
+        r = requests.post(url, json=payload, timeout=30)
+        j = r.json()
+        if 'candidates' not in j:
+            print(f"Gemini vision error {j}")
+            return None
+        txt = j['candidates'][0]['content']['parts'][0]['text']
+        print(f"Image AI raw: {txt[:500]}")
+        m = re.search(r'\{.*\}', txt, re.DOTALL)
+        if m:
+            data = json.loads(m.group())
+            return data
+        else:
+            return {"observation": txt, "observed_symptoms": [], "possible_conditions": [], "severity": "", "lab_findings": ""}
+    except Exception as e:
+        print(f"Image analysis fail {e}")
+        return None
+
+def generate_ai_details(disease_name, symptoms_list, image_observation=""):
     GEMINI_KEY = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
     GROQ_KEY = os.getenv('GROQ_API_KEY')
-    prompt = f"Disease: {disease_name}, Symptoms: {','.join(symptoms_list)}. Give JSON only: {{\"Description\":\"2 lines\",\"Diet\":\"what to eat\",\"Exercise\":\"2 exercises\",\"Precautions\":\"2 precautions\",\"Lab_Tests\":[\"CBC\",\"X-Ray\"],\"Specialist\":\"doctor type\"}}"
+    # image observation ko bhi prompt me daalo
+    extra_ctx = f" Image findings: {image_observation}." if image_observation else ""
+    prompt = f"Disease: {disease_name}, Symptoms: {','.join(symptoms_list)}.{extra_ctx} Give JSON only: {{\"Description\":\"2-3 lines including image findings if any\",\"Diet\":\"what to eat\",\"Exercise\":\"2 exercises\",\"Precautions\":\"2 precautions\",\"Lab_Tests\":[\"CBC\",\"X-Ray\"],\"Specialist\":\"doctor type\"}}"
     if GROQ_KEY:
         try:
-            r=requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {GROQ_KEY}","Content-Type":"application/json"}, json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":prompt}],"temperature":0.5,"max_tokens":500}, timeout=15)
+            r=requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {GROQ_KEY}","Content-Type":"application/json"}, json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":prompt}],"temperature":0.5,"max_tokens":600}, timeout=15)
             txt=r.json()['choices'][0]['message']['content']
             m=re.search(r'\{.*\}', txt, re.DOTALL)
             if m: return json.loads(m.group())
@@ -200,7 +206,7 @@ def generate_ai_details(disease_name, symptoms_list):
     if GEMINI_KEY:
         try:
             url=f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
-            r=requests.post(url, json={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.5,"maxOutputTokens":500}}, timeout=15)
+            r=requests.post(url, json={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.5,"maxOutputTokens":600}}, timeout=15)
             txt=r.json()['candidates'][0]['content']['parts'][0]['text']
             m=re.search(r'\{.*\}', txt, re.DOTALL)
             if m: return json.loads(m.group())
@@ -254,46 +260,33 @@ def mark_welcome_done():
 def wellbeing_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     if os.path.exists('templates/wellbeing.html'): return render_template('wellbeing.html')
-    elif os.path.exists('templates/well_being.html'): return render_template('well_being.html')
     else: return render_template('pp.html', symptoms=all_symptoms)
 @app.route('/my-profile')
 @app.route('/my_profile')
 @app.route('/profile')
 def my_profile_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    user_data={'username':session.get('username','User'),'email':session.get('user_email',''),'phone':session.get('user_phone',''),'login_time':session.get('login_time','')}
+    user_data={'username':session.get('username','User'),'email':session.get('user_email',''),'phone':session.get('user_phone','')}
     if os.path.exists('templates/my_profile.html'): return render_template('my_profile.html', user=user_data)
-    else:
-        return f"""
-        <html><head><meta name='viewport' content='width=device-width, initial-scale=1'>
-        <style>body{{font-family:Arial;padding:20px;max-width:500px;margin:auto}} .card{{border:1px solid #ddd;padding:20px;border-radius:10px}} button{{background:#4CAF50;color:white;padding:10px 20px;border:none;border-radius:5px;width:100%;margin:5px 0}}</style>
-        </head><body>
-        <h2>👤 My Profile</h2>
-        <div class='card'><p><b>Name:</b> {user_data['username']}</p><p><b>Email:</b> {user_data['email']}</p><p><b>Phone:</b> {user_data['phone']}</p><p><b>Login: 30 Days</b></p></div>
-        <button onclick="window.location.href='/logout'">🔄 Change ID - Logout & Login with New ID</button>
-        <button onclick="window.location.href='/pp'">Back</button></body></html>
-        """
+    else: return f"<html><body><h2>My Profile</h2><p>{user_data}</p><a href='/logout'>Change ID</a></body></html>"
 
-def send_otp_email(to_email, otp):
+def send_otp_email_bg(to_email, otp):
     try:
         email_user=os.getenv('EMAIL_USER') or os.getenv('MAIL_USER')
         email_pass=os.getenv('EMAIL_PASS') or os.getenv('MAIL_PASS')
-        if not email_user or not email_pass: return False
-        body=f"Your OTP is: {otp}\nValid for 5 minutes."
+        if not email_user or not email_pass: return
+        body=f"Your OTP is: {otp}\nValid 5 min"
         msg=MIMEMultipart()
         msg['From']=email_user
         msg['To']=to_email
-        msg['Subject']="Your OTP Code"
+        msg['Subject']="OTP"
         msg.attach(MIMEText(body, 'plain'))
-        server=smtplib.SMTP('smtp.gmail.com', 587, timeout=15)
+        server=smtplib.SMTP('smtp.gmail.com', 587, timeout=10)
         server.starttls()
         server.login(email_user, email_pass)
         server.send_message(msg)
         server.quit()
-        return True
-    except Exception as e:
-        print(f"Email fail {e}")
-        return False
+    except Exception as e: print(f"Email bg fail {e}")
 
 @app.route('/api/send_otp', methods=['POST'])
 def api_send_otp():
@@ -308,11 +301,16 @@ def api_send_otp():
     session['otp_phone']=phone
     session['otp_time']=datetime.now().isoformat()
     session.permanent=True
+    session.modified=True
     otp_store[identifier]={'otp':otp,'time':datetime.now()}
     print(f"OTP {otp} for {identifier}")
-    email_sent=True
-    if email: email_sent=send_otp_email(email, otp)
-    return jsonify({'status':'sent','otp_autofill':otp, 'email_sent':email_sent})
+    if email:
+        try:
+            thread = threading.Thread(target=send_otp_email_bg, args=(email, otp))
+            thread.daemon = True
+            thread.start()
+        except: pass
+    return jsonify({'status':'sent','otp_autofill':otp, 'email_sent': True})
 
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
@@ -343,20 +341,24 @@ def api_verify_login():
     session['user_phone']=phone
     session['login_time']=datetime.now().strftime("%d-%m-%Y %H:%M")
     session['welcome_shown']=False
+    session.modified=True
     return jsonify({'status':'success'})
 
-# ===== PREDICT WITH FILE UPLOAD - REPORT PDF KE SAATH =====
+# ===== PREDICT WITH AI IMAGE SCAN + PDF ATTACH =====
 @app.route('/predict', methods=['POST'])
 def predict_route():
     raw=request.form.get('symptoms') or ""
     if not raw.strip(): return redirect(url_for('pp_page'))
     cleaned=parse_symptoms(str(raw), all_symptoms)
     
-    # File upload handle
     uploaded_filename = None
     uploaded_path = None
-    if 'medical_report' in request.files or 'report' in request.files or 'file' in request.files:
-        file = request.files.get('medical_report') or request.files.get('report') or request.files.get('file')
+    image_analysis = None
+    observed_from_image = []
+    ai_image_text = ""
+    
+    if 'medical_report' in request.files or 'report' in request.files or 'file' in request.files or 'photo' in request.files:
+        file = request.files.get('medical_report') or request.files.get('report') or request.files.get('file') or request.files.get('photo')
         if file and file.filename and allowed_file(file.filename):
             filename = secure_filename(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
@@ -364,6 +366,20 @@ def predict_route():
             uploaded_filename = filename
             uploaded_path = f"/uploads/{filename}"
             print(f"File saved {filepath}")
+            
+            # AI se image scan karo - agar image hai to
+            if filename.lower().split('.')[-1] in ['png','jpg','jpeg','webp']:
+                print("Analyzing image with Gemini Vision...")
+                image_analysis = analyze_medical_image(filepath)
+                if image_analysis:
+                    observed_from_image = image_analysis.get('observed_symptoms', [])
+                    ai_image_text = image_analysis.get('observation','')
+                    print(f"Image observed: {observed_from_image}")
+                    # Image ke symptoms ko bhi add karo
+                    for sym in observed_from_image:
+                        cleaned_sym = normalize(sym, all_symptoms)
+                        if cleaned_sym not in cleaned:
+                            cleaned.append(cleaned_sym)
 
     scores=[]
     for dname, info in diseases_data.items():
@@ -373,11 +389,25 @@ def predict_route():
         km=sum(1 for c in cleaned if c.lower() in full_text)
         if km>0: scores.append((dname, km, info))
     scores.sort(key=lambda x:x[1], reverse=True)
+    
+    # Agar image analysis ne possible_conditions diye to usko prefer karo
+    if image_analysis and image_analysis.get('possible_conditions'):
+        possible = image_analysis.get('possible_conditions')[0]
+        # Check if possible condition exists in diseases_data
+        for dname in diseases_data.keys():
+            if possible.lower() in dname.lower() or dname.lower() in possible.lower():
+                # Put it on top
+                scores.insert(0, (dname, 100, diseases_data[dname]))
+                break
+    
     if scores:
         dname, matched_count, dinfo=scores[0][0], scores[0][1], scores[0][2]
         conf=min(96, max(55, (matched_count/len(cleaned)*85+10) if cleaned else 40))
     else:
         dname="General Checkup"; dinfo={}; conf=45
+        # Agar image se condition mili to wahi use karo
+        if image_analysis and image_analysis.get('possible_conditions'):
+            dname = image_analysis.get('possible_conditions')[0]
 
     desc=get_field(dinfo, ['Description','description'])
     diet=get_field(dinfo, ['Diet','diet'])
@@ -386,18 +416,25 @@ def predict_route():
     lab=get_field(dinfo, ['Lab_Tests','lab_tests'])
     doctor=get_field(dinfo, ['Specialist','specialist','doctor'])
 
+    # AI se details banao - image observation ke saath
     ai_data=None
-    if not desc or not diet:
-        ai_data=generate_ai_details(dname, cleaned)
+    if not desc or not diet or image_analysis:
+        ai_data=generate_ai_details(dname, cleaned, ai_image_text)
+    
     if ai_data:
         desc=desc or ai_data.get('Description','')
+        # Image observation ko description me add karo
+        if ai_image_text and ai_image_text not in desc:
+            desc = f"{desc} Image finding: {ai_image_text}"
         diet=diet or ai_data.get('Diet','')
         exercise=exercise or ai_data.get('Exercise','')
         precaution=precaution or ai_data.get('Precautions','')
         if not lab: lab=ai_data.get('Lab_Tests',[])
         doctor=doctor or ai_data.get('Specialist','')
 
-    if not desc: desc=f"{dname} related to {', '.join(cleaned[:3])}. Consult doctor."
+    if not desc: 
+        if ai_image_text: desc=f"{dname} detected. {ai_image_text} Related to {', '.join(cleaned[:3])}."
+        else: desc=f"{dname} related to {', '.join(cleaned[:3])}. Consult doctor."
     if not diet: diet="Light balanced diet, avoid oily food, more water"
     if not exercise: exercise="30 min walk, breathing exercise, rest"
     if not precaution: precaution="Rest, hydration, avoid self-medication, consult doctor if >3 days"
@@ -411,7 +448,9 @@ def predict_route():
         'original_input':raw,'patient_name':request.form.get('patient_name') or session.get('username','Patient'),
         'age':request.form.get('age') or "N/A",'gender':request.form.get('gender') or "N/A",
         'date':datetime.now().strftime("%d-%m-%Y %H:%M"),'duration':request.form.get('duration') or "N/A",
-        'uploaded_file': uploaded_filename, 'uploaded_path': uploaded_path
+        'uploaded_file': uploaded_filename, 'uploaded_path': uploaded_path,
+        'image_analysis': image_analysis, 'observed_from_image': observed_from_image,
+        'ai_observation': ai_image_text
     }
     
     session['last_result']=result
