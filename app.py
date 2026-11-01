@@ -6,20 +6,17 @@ from datetime import datetime, timedelta
 import mysql.connector
 from mysql.connector import Error
 
-EMAIL_USER = os.getenv("MAIL_USER") or os.getenv("EMAIL_USER")
-EMAIL_PASS = os.getenv("MAIL_PASS") or os.getenv("EMAIL_PASS")
 otp_store = {}
 
 app = Flask(__name__)
 app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
 
-# ===== LOGIN LOOP FIX - FINAL FOR VERCEL =====
+# ===== LOGIN LOOP FIX - VERCEL =====
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.config['SESSION_COOKIE_NAME'] = 'smart_session'
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['SESSION_COOKIE_SECURE'] = False  # IMPORTANT: Vercel pe False hi rakho
+app.config['SESSION_COOKIE_SECURE'] = False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-# before_request hata diya - yahi loop kara raha tha
 
 @app.route('/manifest.json')
 def manifest(): return send_from_directory('static', 'manifest.json')
@@ -132,7 +129,7 @@ try:
                 for part in re.split(r'[,;]', s):
                     if part.strip(): temp.add(part.strip().lower())
         all_symptoms=sorted(list(temp))
-    print(f"Loaded {len(diseases_data)} diseases")
+    print(f"Loaded {len(diseases_data)} diseases, {len(all_symptoms)} symptoms")
 except Exception as e: print(f"Load error {e}")
 
 def get_field(info, keys, default=""):
@@ -153,7 +150,7 @@ def generate_ai_details(disease_name, symptoms_list):
             txt=r.json()['choices'][0]['message']['content']
             m=re.search(r'\{.*\}', txt, re.DOTALL)
             if m: return json.loads(m.group())
-        except: pass
+        except Exception as e: print(f"Groq details fail {e}")
     if GEMINI_KEY:
         try:
             url=f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
@@ -161,7 +158,7 @@ def generate_ai_details(disease_name, symptoms_list):
             txt=r.json()['candidates'][0]['content']['parts'][0]['text']
             m=re.search(r'\{.*\}', txt, re.DOTALL)
             if m: return json.loads(m.group())
-        except: pass
+        except Exception as e: print(f"Gemini details fail {e}")
     return None
 
 @app.route('/')
@@ -204,44 +201,76 @@ def mark_welcome_done():
     return redirect(url_for('pp_page'))
 @app.route('/patient')
 def patient_page(): return redirect(url_for('pp_page'))
+@app.route('/lp')
+def lp_page(): return render_template('lp.html') if os.path.exists('templates/lp.html') else redirect(url_for('pp_page'))
+@app.route('/emergency')
+def emergency_page():
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    return render_template('emergency.html') if os.path.exists('templates/emergency.html') else render_template('pp.html', symptoms=all_symptoms)
+@app.route('/doctor-ai')
+@app.route('/doctor_ai')
+@app.route('/doctor')
+def doctor_ai_page():
+    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
+    if os.path.exists('templates/doctor_ai.html'): return render_template('doctor_ai.html')
+    elif os.path.exists('templates/doctor-ai.html'): return render_template('doctor-ai.html')
+    else: return render_template('pp.html', symptoms=all_symptoms)
 
 def send_otp_email(to_email, otp):
     try:
-        email_user=os.getenv('EMAIL_USER') or os.getenv('MAIL_USER')
+        email_user=os.getenv('EMAIL_USER') or os.getenv('MAIL_USER') or os.getenv('MAIL_USER'.lower())
         email_pass=os.getenv('EMAIL_PASS') or os.getenv('MAIL_PASS')
-        if not email_user or not email_pass: return False
-        body=f"Your OTP is: {otp}\nValid for 5 minutes."
+        print(f"Trying email from {email_user} to {to_email}")
+        if not email_user or not email_pass: 
+            print("EMAIL_USER/PASS missing in ENV")
+            return False
+        body=f"Your Smart Disease System OTP is: {otp}\nValid for 5 minutes."
         msg=MIMEMultipart()
         msg['From']=email_user
         msg['To']=to_email
-        msg['Subject']="Your OTP Code"
+        msg['Subject']="Your OTP Code - Smart Disease System"
         msg.attach(MIMEText(body, 'plain'))
         server=smtplib.SMTP('smtp.gmail.com', 587, timeout=15)
         server.starttls()
         server.login(email_user, email_pass)
         server.send_message(msg)
         server.quit()
+        print("Email sent success")
         return True
     except Exception as e:
         print(f"Email fail {e}")
         return False
 
 @app.route('/api/send_otp', methods=['POST'])
+@app.route('/api/send_email_otp', methods=['POST'])
 def api_send_otp():
     data=request.get_json() or {}
     email=data.get('email','').strip().lower()
     phone=data.get('phone','').strip()
     identifier=email or phone
     if not identifier: return jsonify({'status':'error','message':'Email required'}),400
+    
     otp=str(random.randint(100000,999999))
+    
+    # VERCEL FIX: Session me save - dict fail hota hai vercel pe
+    session['otp_code'] = otp
+    session['otp_email'] = email
+    session['otp_phone'] = phone
+    session['otp_time'] = datetime.now().isoformat()
+    session.permanent = True
+    
     otp_store[identifier]={'otp':otp,'time':datetime.now()}
     if email: otp_store[email]={'otp':otp,'time':datetime.now()}
     if phone: otp_store[phone]={'otp':otp,'time':datetime.now()}
-    print(f"OTP {otp} for {identifier}")
+    
+    print(f"Generated OTP {otp} for {identifier}")
+    
+    email_sent = True
     if email:
-        if not send_otp_email(email, otp):
-            return jsonify({'status':'failed','message':'email not exist'}),200
-    return jsonify({'status':'sent','message':'OTP sent','otp_autofill':otp})
+        email_sent = send_otp_email(email, otp)
+    
+    # Autofill bhejo taki email fail bhi ho to login ho jaye
+    return jsonify({'status':'sent','message':'OTP sent','otp_autofill':otp, 'email_sent': email_sent})
 
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
@@ -250,8 +279,30 @@ def api_verify_login():
     phone=data.get('phone','').strip()
     user_otp=str(data.get('otp','')).strip()
     identifier=email or phone
-    target=otp_store.get(identifier) or otp_store.get(email) or otp_store.get(phone)
-    if not target: return jsonify({'status':'error','message':'OTP not found'}),400
+    
+    print(f"Verify request OTP={user_otp} for {identifier}")
+    print(f"Session OTP={session.get('otp_code')} Email={session.get('otp_email')}")
+    
+    target = None
+    
+    # 1. Session se check (Vercel ke liye main)
+    s_otp = session.get('otp_code')
+    s_time_str = session.get('otp_time')
+    if s_otp and s_time_str:
+        try:
+            s_time = datetime.fromisoformat(s_time_str)
+            if datetime.now() - s_time < timedelta(minutes=5) and s_otp == user_otp:
+                target = {'otp': s_otp, 'time': s_time}
+                print("Matched from SESSION")
+        except Exception as e:
+            print(f"Session parse fail {e}")
+    
+    # 2. Dict se check (Local ke liye)
+    if not target:
+        target = otp_store.get(identifier) or otp_store.get(email) or otp_store.get(phone)
+        if target: print("Matched from DICT")
+    
+    if not target: return jsonify({'status':'error','message':'OTP not found, resend'}),400
     if datetime.now()-target['time']>timedelta(minutes=5): return jsonify({'status':'error','message':'OTP expired'}),400
     if target['otp']!=user_otp: return jsonify({'status':'error','message':'Invalid OTP'}),400
     
@@ -266,8 +317,8 @@ def api_verify_login():
     otp_store.pop(email,None)
     otp_store.pop(phone,None)
     
-    resp=jsonify({'status':'success','message':'logged in'})
-    return resp
+    print(f"LOGIN SUCCESS {email}")
+    return jsonify({'status':'success'})
 
 @app.route('/predict', methods=['POST'])
 def predict_route():
@@ -288,11 +339,11 @@ def predict_route():
     else:
         dname="General Checkup"; dinfo={}; conf=45
 
-    desc=get_field(dinfo, ['Description','description','desc'])
-    diet=get_field(dinfo, ['Diet','diet'])
-    exercise=get_field(dinfo, ['Exercise','exercise'])
-    precaution=get_field(dinfo, ['Precautions','precaution'])
-    lab=get_field(dinfo, ['Lab_Tests','lab_tests','lab'])
+    desc=get_field(dinfo, ['Description','description','desc','about'])
+    diet=get_field(dinfo, ['Diet','diet','food'])
+    exercise=get_field(dinfo, ['Exercise','exercise','workout'])
+    precaution=get_field(dinfo, ['Precautions','precaution','care'])
+    lab=get_field(dinfo, ['Lab_Tests','lab_tests','lab','tests'])
     doctor=get_field(dinfo, ['Specialist','specialist','doctor'])
 
     ai_data=None
@@ -307,8 +358,8 @@ def predict_route():
         doctor=doctor or ai_data.get('Specialist','')
 
     if not desc: desc=f"{dname} related to {', '.join(cleaned[:3])}. Consult doctor."
-    if not diet: diet="Light balanced diet, avoid oily food, more water"
-    if not exercise: exercise="30 min walk, breathing exercise, rest"
+    if not diet: diet="Light balanced diet, avoid oily food, more water, fruits"
+    if not exercise: exercise="30 min walk, breathing exercise, adequate rest"
     if not precaution: precaution="Rest, hydration, avoid self-medication, consult doctor if >3 days"
     if not lab: lab=["CBC","General Checkup"]
     if isinstance(lab, str): lab=[s.strip() for s in re.split(r',|;', lab) if s.strip()]
@@ -324,7 +375,7 @@ def predict_route():
 @app.route('/api/doctor_chat', methods=['GET','POST'])
 def doctor_chat_api():
     if request.method=='GET':
-        return jsonify({'gemini':bool(os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')), 'groq':bool(os.getenv('GROQ_API_KEY')), 'diseases':len(diseases_data), 'status':'ok'})
+        return jsonify({'gemini':bool(os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')), 'groq':bool(os.getenv('GROQ_API_KEY')), 'diseases':len(diseases_data), 'email_config':bool(os.getenv('EMAIL_USER')), 'status':'ok'})
     try:
         data=request.get_json(force=True) or {}
         msg=(data.get('message') or '').strip()
@@ -335,7 +386,7 @@ def doctor_chat_api():
             for model in ["gemini-1.5-flash","gemini-1.5-flash-latest"]:
                 try:
                     url=f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_KEY}"
-                    prompt=f"You are Predict AI, friendly Indian doctor. User: {msg}. 4-5 lines advice."
+                    prompt=f"You are Predict AI, friendly Indian doctor. You know 410 diseases. User: {msg}. Give helpful advice 4-5 lines."
                     r=requests.post(url, json={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.7,"maxOutputTokens":600}}, timeout=25)
                     j=r.json()
                     if 'candidates' in j:
@@ -343,11 +394,11 @@ def doctor_chat_api():
                 except: continue
         if GROQ_KEY:
             try:
-                r=requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {GROQ_KEY}","Content-Type":"application/json"}, json={"model":"llama-3.1-8b-instant","messages":[{"role":"system","content":"You are Predict AI, helpful doctor"},{"role":"user","content":msg}],"temperature":0.7,"max_tokens":800}, timeout=20)
+                r=requests.post("https://api.groq.com/openai/v1/chat/completions", headers={"Authorization": f"Bearer {GROQ_KEY}","Content-Type":"application/json"}, json={"model":"llama-3.1-8b-instant","messages":[{"role":"system","content":"You are Predict AI, helpful Indian doctor"},{"role":"user","content":msg}],"temperature":0.7,"max_tokens":800}, timeout=20)
                 j=r.json()
                 if 'choices' in j: return jsonify({'reply':j['choices'][0]['message']['content'],'source':'Groq'}),200
             except: pass
-        return jsonify({'reply':f"Samajh gaya: {msg}. Detail batao.","source":"Fallback"}),200
+        return jsonify({'reply':f"Samajh gaya: {msg}. Detail batao, main 410 diseases ke basis pe help karunga.",'source':'Fallback'}),200
     except Exception as e:
         return jsonify({'reply':"Hi, share problem again.",'source':'Fallback'}),200
 
