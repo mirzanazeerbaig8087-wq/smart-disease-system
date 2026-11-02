@@ -5,16 +5,14 @@ from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 
-otp_store = {}
-
 app = Flask(__name__)
-app.secret_key = 'smart_disease_2026_secret_key_123_final_700'
+app.secret_key = 'smart_disease_2026_secret_key_123_final_700_V2'
 
-# ===== FIXED SESSION - LOOP FIX =====
+IS_VERCEL = os.getenv('VERCEL') == '1'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-app.config['SESSION_COOKIE_NAME'] = 'smart_session'
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # None se loop hota tha
-app.config['SESSION_COOKIE_SECURE'] = True  # Vercel https hai
+app.config['SESSION_COOKIE_NAME'] = 'smart_session_v2'
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SECURE'] = True if IS_VERCEL else False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -28,8 +26,7 @@ def get_env(key):
 
 @app.before_request
 def make_session_permanent():
-    if session.get('is_logged_in'):
-        session.permanent = True
+    session.permanent = True
 
 @app.route('/manifest.json')
 def manifest(): return send_from_directory('static', 'manifest.json')
@@ -39,44 +36,25 @@ def sw(): return send_from_directory('static', 'sw.js')
 def uploaded_file(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
-# ===== 700+ TRANSLATOR =====
 def build_translator():
     base = {
-        "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","halka bukhar","bukhar thand","thand ke sath bukhar","kapkapahat","fever","high fever","bukhar hai"],
-        "headache": ["sir dard","sar dard","sir me dard","adha sir dard","sir bhari","migraine","headache","sir dard hai"],
-        "cough": ["khansi","khasi","sukhi khansi","gili khansi","khoon wali khansi","cough","dry cough","khansi hai"],
-        "cold": ["sardi","zukam","jukaam","naak behna","naak band","cheek","cold","sardi hai"],
-        "sore throat": ["gala kharab","gale me dard","gala dard","gala kharash","sore throat"],
+        "fever": ["bukhar","bukhhar","bhukhar","tezz bukhar","tez bukhar","fever","high fever","bukhar hai"],
+        "headache": ["sir dard","sar dard","sir me dard","migraine","headache","sir dard hai"],
+        "cough": ["khansi","khasi","sukhi khansi","gili khansi","cough","dry cough","khansi hai"],
+        "cold": ["sardi","zukam","jukaam","naak behna","cold","sardi hai"],
+        "sore throat": ["gala kharab","gale me dard","gala dard","sore throat"],
         "fatigue": ["thakan","thakawat","kamzori","susti","fatigue","weakness","thakan hai"],
-        "abdominal pain": ["pet dard","pet me dard","pet kharab","pet me jalan","gas","abdominal pain","stomach pain","pet dard hai"],
-        "vomiting": ["ulti","ultiyan","matli","jeee ghabrana","vomiting","nausea","ulti hai"],
+        "abdominal pain": ["pet dard","pet me dard","pet kharab","abdominal pain","stomach pain","pet dard hai"],
+        "vomiting": ["ulti","ultiyan","matli","vomiting","nausea","ulti hai"],
         "diarrhea": ["dast","patla dast","loose motion","diarrhea","dast hai"],
-        "constipation": ["kabz","kabj","pet saaf nahi","constipation","kabz hai"],
-        "chest pain": ["seene me dard","seena dard","chati me dard","chest pain","seene me dard hai"],
-        "dizziness": ["chakkar","chakkar aana","sir ghumna","dizziness","chakkar hai"],
-        "joint pain": ["jodo me dard","ghutno me dard","gathiya","joint pain","knee pain"],
-        "back pain": ["kamar dard","peeth dard","back pain","kamar dard hai"],
-        "muscle pain": ["badan dard","body pain","muscle pain","badan dard hai"],
-        "shortness of breath": ["saans phoolna","saans lene me dikkat","dum ghutna","shortness of breath","saans phool rahi"],
-        "weight loss": ["wazan kam","patla hona","weight loss","wazan kam ho raha"],
-        "weight gain": ["wazan badhna","mota hona","weight gain"],
-        "loss of appetite": ["bhukh kam","bhukh nahi","loss of appetite","bhukh nahi lag rahi"],
+        "chest pain": ["seene me dard","seena dard","chest pain","seene me dard hai"],
+        "acne": ["acne","muhase","chehre pe daane","pimple","pimples","acne hai"],
         "itching": ["khujli","kharish","khujali","itching","khujli hai"],
         "rash": ["daane","laal daane","rash","daane hai"],
-        "swelling": ["soojan","sujan","pair me soojan","swelling","soojan hai"],
-        "acne": ["acne","muhase","chehre pe daane","pimple","pimples","acne hai","muhase hai"],
-        "numbness": ["sunn hona","haath sunn","pair sunn","numbness"],
-        "tingling": ["jhanjhanahat","tingling"],
-        "palpitations": ["dil ki dhadkan tez","palpitations"],
-        "wheezing": ["seeti wali saans","wheezing"],
-        "yellow skin": ["peela padna","peeli chamdi","yellow skin","piliya"],
-        "acidity": ["khatta paani","acidity"],
-        "burning urination": ["peshaab me jalan","burning urination"],
-        "blood in urine": ["peshaab me khoon","blood in urine"],
     }
     trans = {}
-    prefixes = ["", "mujhe ", "mere ko ", "mujhko ", "muje "]
-    suffixes = ["", " hai", " ho raha hai", " ho rahi hai", " bahut hai"]
+    prefixes = ["", "mujhe ", "mere ko ", "mujhko "]
+    suffixes = ["", " hai", " ho raha hai", " bahut hai"]
     for eng, hindi_list in base.items():
         for h in hindi_list:
             h = h.lower().strip()
@@ -86,11 +64,6 @@ def build_translator():
                     key = f"{pre}{h}{suf}".strip()
                     key = re.sub(r'\s+', ' ', key)
                     if len(key)>1: trans[key]=eng
-    extra = ["fever","cough","cold","sore throat","headache","acne","pimple","rash","itching","swelling","chest pain","abdominal pain","vomiting","diarrhea","burning urination","yellow skin","acidity"]
-    for s in extra:
-        trans[s]=s
-        trans[f"i have {s}"]=s
-    print(f"Translator built {len(trans)}")
     return trans
 
 TRANSLATION_MAP = build_translator()
@@ -124,12 +97,9 @@ try:
             d=pickle.load(f)
             if isinstance(d, dict):
                 diseases_data = d.get('diseases_data') or d.get('data') or d
-                if 'all_symptoms' in d: all_symptoms = d['all_symptoms']
     if not diseases_data and os.path.exists('diseases.json'):
         with open('diseases.json','r',encoding='utf-8') as f:
             diseases_data=json.load(f)
-    if not all_symptoms and os.path.exists('symptoms.pkl'):
-        with open('symptoms.pkl','rb') as f: all_symptoms=pickle.load(f)
     if not all_symptoms and diseases_data:
         temp=set()
         for v in diseases_data.values():
@@ -148,135 +118,6 @@ def get_field(info, keys, default=""):
             if ik.lower()==k.lower() and info[ik]: return info[ik]
     return default
 
-# ===== NEW MULTI-API FALLBACK SYSTEM =====
-def call_openrouter_text(prompt, is_vision=False, image_b64=None):
-    OPENROUTER_KEY = get_env('OPENROUTER_API_KEY')
-    if not OPENROUTER_KEY: return None
-    try:
-        if is_vision and image_b64:
-            model = "qwen/qwen2-vl-7b-instruct:free" # free vision
-            payload = {
-                "model": model,
-                "messages": [{"role":"user","content":[
-                    {"type":"text","text": prompt},
-                    {"type":"image_url","image_url":{"url": f"data:image/jpeg;base64,{image_b64}"}}
-                ]}]
-            }
-        else:
-            model = "meta-llama/llama-3.1-8b-instruct:free"
-            payload = {"model": model, "messages":[{"role":"user","content": prompt}]}
-        
-        r = requests.post("https://openrouter.ai/api/v1/chat/completions",
-            headers={"Authorization": f"Bearer {OPENROUTER_KEY}", "Content-Type":"application/json"},
-            json=payload, timeout=30)
-        j = r.json()
-        if 'choices' in j and len(j['choices'])>0:
-            return j['choices'][0]['message']['content']
-    except Exception as e:
-        print(f"OpenRouter fail {e}")
-    return None
-
-def call_groq_text(prompt):
-    GROQ_KEY = get_env('GROQ_API_KEY')
-    if not GROQ_KEY: return None
-    try:
-        r=requests.post("https://api.groq.com/openai/v1/chat/completions",
-            headers={"Authorization": f"Bearer {GROQ_KEY}","Content-Type":"application/json"},
-            json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":prompt}],"temperature":0.5,"max_tokens":800}, timeout=15)
-        j=r.json()
-        if 'choices' in j:
-            return j['choices'][0]['message']['content']
-    except Exception as e:
-        print(f"Groq fail {e}")
-    return None
-
-def call_gemini_text(prompt):
-    GEMINI_KEY = get_env('GEMINI_API_KEY') or get_env('GOOGLE_API_KEY')
-    if not GEMINI_KEY: return None
-    try:
-        url=f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
-        r=requests.post(url, json={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.5,"maxOutputTokens":800}}, timeout=15)
-        j=r.json()
-        if 'candidates' in j:
-            return j['candidates'][0]['content']['parts'][0]['text']
-    except Exception as e:
-        print(f"Gemini fail {e}")
-    return None
-
-def call_together_text(prompt):
-    TOGETHER_KEY = get_env('TOGETHER_API_KEY')
-    if not TOGETHER_KEY: return None
-    try:
-        r=requests.post("https://api.together.xyz/v1/chat/completions",
-            headers={"Authorization": f"Bearer {TOGETHER_KEY}","Content-Type":"application/json"},
-            json={"model":"meta-llama/Llama-3.1-8b-Instruct-Turbo","messages":[{"role":"user","content":prompt}],"temperature":0.5,"max_tokens":800}, timeout=15)
-        j=r.json()
-        if 'choices' in j:
-            return j['choices'][0]['message']['content']
-    except Exception as e:
-        print(f"Together fail {e}")
-    return None
-
-def analyze_medical_image(image_path):
-    img_b64 = ""
-    try:
-        with open(image_path, "rb") as f:
-            img_b64 = base64.b64encode(f.read()).decode('utf-8')
-    except: return None
-
-    ext = image_path.split('.')[-1].lower()
-    mime = "image/jpeg" if ext in ["jpg","jpeg"] else "image/png" if ext=="png" else "image/webp" if ext=="webp" else "image/jpeg"
-    
-    prompt = """Analyze medical image. Return ONLY JSON: {"observation": "2-3 lines", "observed_symptoms": ["acne","redness"], "possible_conditions": ["acne vulgaris"], "severity": "mild/moderate/severe", "lab_findings": ""}"""
-
-    # 1. Try Gemini Vision
-    GEMINI_KEY = get_env('GEMINI_API_KEY') or get_env('GOOGLE_API_KEY')
-    if GEMINI_KEY:
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_KEY}"
-            payload = {"contents": [{"parts": [{"text": prompt}, {"inline_data": {"mime_type": mime, "data": img_b64}}]}], "generationConfig": {"temperature": 0.3, "maxOutputTokens": 1000}}
-            r = requests.post(url, json=payload, timeout=30)
-            j = r.json()
-            if 'candidates' in j:
-                txt = j['candidates'][0]['content']['parts'][0]['text']
-                m = re.search(r'\{.*\}', txt, re.DOTALL)
-                if m: return json.loads(m.group())
-        except Exception as e:
-            print(f"Gemini vision fail {e}")
-
-    # 2. Try OpenRouter Vision FREE
-    txt = call_openrouter_text(prompt, is_vision=True, image_b64=img_b64)
-    if txt:
-        try:
-            m = re.search(r'\{.*\}', txt, re.DOTALL)
-            if m: return json.loads(m.group())
-            return {"observation": txt, "observed_symptoms": [], "possible_conditions": [], "severity": "", "lab_findings": ""}
-        except: pass
-
-    # 3. HF fallback - basic
-    HF_TOKEN = get_env('HF_TOKEN')
-    if HF_TOKEN:
-        try:
-            # Use simple model for image classification if needed, else return basic
-            return {"observation": "Skin condition visible, possible acne/rash. Need clinical check.", "observed_symptoms": ["acne","redness"], "possible_conditions": ["acne vulgaris"], "severity": "moderate", "lab_findings": ""}
-        except: pass
-
-    return None
-
-def generate_ai_details(disease_name, symptoms_list, image_observation=""):
-    extra_ctx = f" Image findings: {image_observation}." if image_observation else ""
-    prompt = f"Disease: {disease_name}, Symptoms: {','.join(symptoms_list)}.{extra_ctx} Give JSON only: {{\"Description\":\"2-3 lines including image findings if any\",\"Diet\":\"what to eat\",\"Exercise\":\"2 exercises\",\"Precautions\":\"2 precautions\",\"Lab_Tests\":[\"CBC\",\"X-Ray\"],\"Specialist\":\"doctor type\"}}"
-    
-    # Fallback chain: OpenRouter -> Groq -> Together -> Gemini
-    for func in [call_openrouter_text, call_groq_text, call_together_text, call_gemini_text]:
-        txt = func(prompt)
-        if txt:
-            try:
-                m=re.search(r'\{.*\}', txt, re.DOTALL)
-                if m: return json.loads(m.group())
-            except: continue
-    return None
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.',1)[1].lower() in ALLOWED_EXT
 
@@ -287,10 +128,7 @@ def cover_page(): return render_template('cover.html')
 @app.route('/login')
 def login_page():
     if session.get('is_logged_in'):
-        if session.get('welcome_shown'):
-            return redirect(url_for('pp_page'))
-        else:
-            return redirect(url_for('welcome_page'))
+        return redirect(url_for('pp_page'))
     return render_template('login.html')
 @app.route('/welcome')
 def welcome_page():
@@ -300,7 +138,6 @@ def welcome_page():
 @app.route('/pp')
 def pp_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    if not session.get('welcome_shown'): return redirect(url_for('welcome_page'))
     return render_template('pp.html', symptoms=all_symptoms)
 @app.route('/resultp')
 def result_page(): 
@@ -319,46 +156,28 @@ def logout():
 @app.route('/mark_welcome_done')
 def mark_welcome_done():
     session['welcome_shown']=True
-    session['is_logged_in']=True
-    session.permanent=True
     session.modified=True
     return redirect(url_for('pp_page'))
-@app.route('/wellbeing')
-@app.route('/well-being')
-@app.route('/well_being')
-def wellbeing_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    if os.path.exists('templates/wellbeing.html'): return render_template('wellbeing.html')
-    else: return render_template('pp.html', symptoms=all_symptoms)
-@app.route('/my-profile')
-@app.route('/my_profile')
-@app.route('/profile')
-def my_profile_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    user_data={'username':session.get('username','User'),'email':session.get('user_email',''),'phone':session.get('user_phone','')}
-    if os.path.exists('templates/my_profile.html'): return render_template('my_profile.html', user=user_data)
-    else: return f"<html><body><h2>My Profile</h2><p>{user_data}</p><a href='/logout'>Change ID</a></body></html>"
 
 def send_otp_email_bg(to_email, otp):
     try:
-        email_user=get_env('EMAIL_USER') or get_env('MAIL_USER')
-        email_pass=get_env('EMAIL_PASS') or get_env('MAIL_PASS')
+        email_user=get_env('EMAIL_USER')
+        email_pass=get_env('EMAIL_PASS')
         if not email_user or not email_pass:
             print("EMAIL_USER/PASS missing")
             return
-        body=f"Your Predict AI OTP is: {otp}\nValid for 5 minutes. Do not share.\n\n- Predict AI Team"
         msg=MIMEMultipart()
         msg['From']=email_user
         msg['To']=to_email
         msg['Subject']=f"Your OTP is {otp} - Predict AI"
-        msg.attach(MIMEText(body, 'plain'))
+        msg.attach(MIMEText(f"Your OTP is: {otp}\nValid 5 mins\n- Predict AI Team", 'plain'))
         server=smtplib.SMTP('smtp.gmail.com', 587, timeout=15)
         server.starttls()
         server.login(email_user, email_pass)
         server.send_message(msg)
         server.quit()
         print(f"Email sent to {to_email}")
-    except Exception as e: print(f"Email bg fail {e}")
+    except Exception as e: print(f"Email fail {e}")
 
 @app.route('/api/send_otp', methods=['POST'])
 def api_send_otp():
@@ -367,38 +186,18 @@ def api_send_otp():
     phone=data.get('phone','').strip()
     identifier=email or phone
     if not identifier: return jsonify({'status':'error','message':'Email or Phone required'}),400
-    
     otp=str(random.randint(100000,999999))
-    # DEMO OTP for phone also same
-    if phone and not email:
-        # Phone ke liye bhi same OTP, frontend auto fill kar dega
-        pass
-    
     session['otp_code']=otp
-    session['otp_email']=email
-    session['otp_phone']=phone
+    session['otp_identifier']=identifier
     session['otp_time']=datetime.now().isoformat()
     session.permanent=True
     session.modified=True
-    
-    otp_store[identifier]={'otp':otp,'time':datetime.now()}
-    if email: otp_store[email]={'otp':otp,'time':datetime.now()}
-    if phone: otp_store[phone]={'otp':otp,'time':datetime.now()}
-    
     print(f"OTP {otp} for {identifier}")
-    
-    email_sent = False
     if email:
         try:
-            thread = threading.Thread(target=send_otp_email_bg, args=(email, otp))
-            thread.daemon = True
-            thread.start()
-            email_sent = True
-        except Exception as e:
-            print(f"Email thread fail {e}")
-    
-    # BOTH phone and email ko autofill denge
-    return jsonify({'status':'sent','otp_autofill':otp, 'email_sent': email_sent, 'message': f'OTP sent to {identifier}'})
+            threading.Thread(target=send_otp_email_bg, args=(email, otp), daemon=True).start()
+        except: pass
+    return jsonify({'status':'sent','otp_autofill':otp, 'message': f'OTP sent to {identifier}'})
 
 @app.route('/api/verify_login', methods=['POST'])
 def api_verify_login():
@@ -406,64 +205,31 @@ def api_verify_login():
     email=data.get('email','').strip().lower()
     phone=data.get('phone','').strip()
     user_otp=str(data.get('otp','')).strip()
-    identifier=email or phone
-    
     if not user_otp or len(user_otp)!=6:
         return jsonify({'status':'error','message':'Enter 6 digit OTP'}),400
-
-    target=None
     s_otp=session.get('otp_code')
     s_time_str=session.get('otp_time')
-    
-    if s_otp and s_time_str:
-        try:
-            s_time=datetime.fromisoformat(s_time_str)
-            if datetime.now()-s_time<timedelta(minutes=10): # 10 min valid
-                if s_otp==user_otp:
-                    target={'otp':s_otp,'time':s_time}
-        except: pass
-    
-    if not target:
-        target=otp_store.get(identifier) or otp_store.get(email) or otp_store.get(phone)
-    
-    # Final check
-    if not target:
-        # Allow if OTP is 6 digits and matches session OTP (demo mode)
-        if s_otp and s_otp==user_otp:
-            target={'otp':user_otp,'time':datetime.now()}
-        else:
-            # For phone demo, allow 123456 as master OTP for testing
-            if user_otp=="123456" and phone:
-                target={'otp':user_otp,'time':datetime.now()}
-            else:
-                return jsonify({'status':'error','message':'OTP not found, please resend'}),400
-    
-    if datetime.now()-target['time']>timedelta(minutes=10):
+    if not s_otp:
         return jsonify({'status':'error','message':'OTP expired, please resend'}),400
-    
-    if target['otp']!=user_otp:
-        # if session otp matches, allow
-        if s_otp and s_otp==user_otp:
-            pass
-        else:
-            return jsonify({'status':'error','message':'Invalid OTP'}),400
-    
-    # SUCCESS - FIX LOGIN LOOP
-    old_welcome = session.get('welcome_shown', False)
-    session.clear()
-    session.permanent=True
+    try:
+        s_time=datetime.fromisoformat(s_time_str)
+        if datetime.now()-s_time>timedelta(minutes=10):
+            return jsonify({'status':'error','message':'OTP expired'}),400
+    except: pass
+    if s_otp != user_otp and not (user_otp=="123456" and phone):
+        return jsonify({'status':'error','message':'Invalid OTP'}),400
     session['is_logged_in']=True
     session['username']=data.get('username','User')
     session['user_email']=email
     session['user_phone']=phone
     session['login_time']=datetime.now().strftime("%d-%m-%Y %H:%M")
-    session['welcome_shown']=old_welcome if old_welcome else False
+    if 'welcome_shown' not in session:
+        session['welcome_shown']=False
+    session.pop('otp_code', None)
+    session.pop('otp_time', None)
     session.modified=True
-    
-    # cleanup otp
-    if identifier in otp_store: del otp_store[identifier]
-    
-    return jsonify({'status':'success', 'redirect': '/welcome' if not session['welcome_shown'] else '/pp'})
+    redirect_url = '/welcome' if not session.get('welcome_shown') else '/pp'
+    return jsonify({'status':'success', 'redirect': redirect_url})
 
 @app.route('/predict', methods=['POST'])
 def predict_route():
@@ -472,29 +238,14 @@ def predict_route():
     cleaned=parse_symptoms(str(raw), all_symptoms)
     uploaded_filename = None
     uploaded_path = None
-    image_analysis = None
-    observed_from_image = []
-    ai_image_text = ""
-    if 'medical_report' in request.files or 'report' in request.files or 'file' in request.files or 'photo' in request.files:
-        file = request.files.get('medical_report') or request.files.get('report') or request.files.get('file') or request.files.get('photo')
+    if 'medical_report' in request.files or 'report' in request.files or 'file' in request.files:
+        file = request.files.get('medical_report') or request.files.get('report') or request.files.get('file')
         if file and file.filename and allowed_file(file.filename):
             filename = secure_filename(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(filepath)
             uploaded_filename = filename
             uploaded_path = f"/uploads/{filename}"
-            print(f"File saved {filepath}")
-            if filename.lower().split('.')[-1] in ['png','jpg','jpeg','webp']:
-                print("Analyzing image with multi-API...")
-                image_analysis = analyze_medical_image(filepath)
-                if image_analysis:
-                    observed_from_image = image_analysis.get('observed_symptoms', [])
-                    ai_image_text = image_analysis.get('observation','')
-                    print(f"Image observed: {observed_from_image}")
-                    for sym in observed_from_image:
-                        cleaned_sym = normalize(sym, all_symptoms)
-                        if cleaned_sym not in cleaned:
-                            cleaned.append(cleaned_sym)
     scores=[]
     for dname, info in diseases_data.items():
         if not isinstance(info, dict): continue
@@ -503,40 +254,18 @@ def predict_route():
         km=sum(1 for c in cleaned if c.lower() in full_text)
         if km>0: scores.append((dname, km, info))
     scores.sort(key=lambda x:x[1], reverse=True)
-    if image_analysis and image_analysis.get('possible_conditions'):
-        possible = image_analysis.get('possible_conditions')[0]
-        for dname in diseases_data.keys():
-            if possible.lower() in dname.lower() or dname.lower() in possible.lower():
-                scores.insert(0, (dname, 100, diseases_data[dname]))
-                break
     if scores:
         dname, matched_count, dinfo=scores[0][0], scores[0][1], scores[0][2]
         conf=min(96, max(55, (matched_count/len(cleaned)*85+10) if cleaned else 40))
     else:
         dname="General Checkup"; dinfo={}; conf=45
-        if image_analysis and image_analysis.get('possible_conditions'):
-            dname = image_analysis.get('possible_conditions')[0]
     desc=get_field(dinfo, ['Description','description'])
     diet=get_field(dinfo, ['Diet','diet'])
     exercise=get_field(dinfo, ['Exercise','exercise'])
     precaution=get_field(dinfo, ['Precautions','precaution'])
     lab=get_field(dinfo, ['Lab_Tests','lab_tests'])
     doctor=get_field(dinfo, ['Specialist','specialist','doctor'])
-    ai_data=None
-    if not desc or not diet or image_analysis:
-        ai_data=generate_ai_details(dname, cleaned, ai_image_text)
-    if ai_data:
-        desc=desc or ai_data.get('Description','')
-        if ai_image_text and ai_image_text not in desc:
-            desc = f"{desc} Image finding: {ai_image_text}"
-        diet=diet or ai_data.get('Diet','')
-        exercise=exercise or ai_data.get('Exercise','')
-        precaution=precaution or ai_data.get('Precautions','')
-        if not lab: lab=ai_data.get('Lab_Tests',[])
-        doctor=doctor or ai_data.get('Specialist','')
-    if not desc: 
-        if ai_image_text: desc=f"{dname} detected. {ai_image_text} Related to {', '.join(cleaned[:3])}."
-        else: desc=f"{dname} related to {', '.join(cleaned[:3])}. Consult doctor."
+    if not desc: desc=f"{dname} related to {', '.join(cleaned[:3])}. Consult doctor."
     if not diet: diet="Light balanced diet, avoid oily food, more water"
     if not exercise: exercise="30 min walk, breathing exercise, rest"
     if not precaution: precaution="Rest, hydration, avoid self-medication, consult doctor if >3 days"
@@ -550,8 +279,6 @@ def predict_route():
         'age':request.form.get('age') or "N/A",'gender':request.form.get('gender') or "N/A",
         'date':datetime.now().strftime("%d-%m-%Y %H:%M"),'duration':request.form.get('duration') or "N/A",
         'uploaded_file': uploaded_filename, 'uploaded_path': uploaded_path,
-        'image_analysis': image_analysis, 'observed_from_image': observed_from_image,
-        'ai_observation': ai_image_text
     }
     session['last_result']=result
     session['is_logged_in']=True
@@ -562,31 +289,16 @@ def predict_route():
 @app.route('/api/doctor_chat', methods=['GET','POST'])
 def doctor_chat_api():
     if request.method=='GET':
-        return jsonify({
-            'gemini':bool(get_env('GEMINI_API_KEY')), 
-            'openrouter':bool(get_env('OPENROUTER_API_KEY')),
-            'groq':bool(get_env('GROQ_API_KEY')), 
-            'together':bool(get_env('TOGETHER_API_KEY')),
-            'hf':bool(get_env('HF_TOKEN')),
-            'diseases':len(diseases_data), 'translator':len(TRANSLATION_MAP), 'status':'ok'
-        })
+        return jsonify({'diseases':len(diseases_data), 'translator':len(TRANSLATION_MAP), 'status':'ok'})
     try:
         data=request.get_json(force=True) or {}
         msg=(data.get('message') or '').strip()
         if not msg: return jsonify({'reply':'Hi, I am your AI Doctor. Batao?','source':'System'}),200
-        
-        # Try all APIs in chain
-        prompt = f"You are Predict AI, friendly Indian doctor. User: {msg}. Give 4-5 lines helpful advice in Hinglish if user speaks Hindi."
-        
-        for func, name in [(call_openrouter_text,"OpenRouter"), (call_groq_text,"Groq"), (call_together_text,"Together"), (call_gemini_text,"Gemini")]:
-            txt = func(prompt)
-            if txt:
-                return jsonify({'reply':txt,'source':name}),200
-        
         return jsonify({'reply':f"Samajh gaya: {msg}. Thoda detail batao, main help karta hu.",'source':'Fallback'}),200
     except Exception as e:
         print(f"Chat error {e}")
         return jsonify({'reply':"Hi, share problem again.",'source':'Fallback'}),200
 
 if __name__=='__main__': 
-    app.run(host='0.0.0.0',port=5000,debug=True)
+    port = int(os.getenv("PORT", 7860))
+    app.run(host='0.0.0.0', port=port, debug=False)
