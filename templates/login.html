@@ -3,85 +3,50 @@
 <head>
 <title>Login - Predict AI</title>
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
-<meta name="theme-color" content="#ffffff">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 body{margin:0;min-height:100vh;background:#ffffff;display:flex;justify-content:center;align-items:center;font-family:'Poppins',sans-serif;padding:16px;box-sizing:border-box}
 .card{width:100%;max-width:360px;background:#ffffff;border-radius:20px;padding:28px 26px;box-shadow:0 8px 30px rgba(0,0,0,0.12);border:1px solid #f0f0f0;box-sizing:border-box}
 .logo-wrap{text-align:center;margin-bottom:22px}
-.logo-icon{font-size:42px;color:#2f80ff;line-height:1;margin-bottom:6px;display:inline-block;filter:drop-shadow(0 4px 8px rgba(47,128,255,0.25))}
-.logo-title{font-size:26px;font-weight:800;color:#121a2b;letter-spacing:0.5px;margin:0;line-height:1.1}
+.logo-icon{font-size:42px;color:#2f80ff;line-height:1;margin-bottom:6px;display:inline-block}
+.logo-title{font-size:26px;font-weight:800;color:#121a2b;letter-spacing:0.5px;margin:0}
 .logo-sub{font-size:11px;color:#8a9bb5;letter-spacing:2.5px;text-transform:uppercase;font-weight:500;margin:7px 0 0 0}
 .input-box{width:100%;padding:13px 14px;background:#f8f9fb;border:1px solid #e9ecf1;border-radius:12px;font-size:13px;outline:none;box-sizing:border-box;margin-bottom:14px;font-family:'Poppins',sans-serif}
 .input-box:focus{border-color:#2a6bff;background:#fff}
 #otpArea, #otpArea2{display:none;flex-direction:column;align-items:center;margin:8px 0 18px 0}
-.otp-label{font-size:11px;color:#5a6b8a;font-weight:600;margin-bottom:8px;letter-spacing:0.5px}
+.otp-label{font-size:11px;color:#5a6b8a;font-weight:600;margin-bottom:8px}
 .otp-row{display:flex;gap:8px;justify-content:center}
 .otp-box{width:42px;height:46px;text-align:center;border:1.5px solid #dbe2ee;border-radius:10px;font-size:18px;font-weight:600;outline:none;background:#f8f9fb}
 .otp-box:focus{border-color:#2a6bff;background:#fff}
 .login-btn{width:100%;padding:13px;background:linear-gradient(90deg,#6bb6ff,#2f80ff);border:none;border-radius:12px;color:white;font-weight:600;font-size:14px;cursor:pointer}
 .login-link{text-align:center;font-size:12px;color:#2a6bff;font-weight:600;cursor:pointer;margin-top:14px}
 #error,#error2{color:#ff3b3b;font-size:11px;text-align:center;margin-top:10px;min-height:14px}
-.hidden-otp{position:absolute;opacity:0;pointer-events:none;height:0;width:0;}
-@media (max-width:400px){
-  .card{padding:22px 18px;border-radius:16px}
-  .otp-box{width:36px;height:42px;font-size:16px}
-  .logo-title{font-size:22px}
-}
 </style>
 </head>
 <body>
 <div class="card" id="emailCard">
-  <div class="logo-wrap">
-    <div class="logo-icon">⌬</div>
-    <h2 class="logo-title">Predict AI</h2>
-    <p class="logo-sub">smart disease system</p>
-  </div>
+  <div class="logo-wrap"><div class="logo-icon">⌬</div><h2 class="logo-title">Predict AI</h2><p class="logo-sub">smart disease system</p></div>
   <form id="emailForm">
-    <input class="input-box" id="username" placeholder="USER NAME" autocomplete="username">
-    <input class="input-box" id="email" placeholder="EMAIL ID" type="email" autocomplete="email">
-    <input class="input-box" id="password" placeholder="PASSWORD" type="password" autocomplete="new-password">
-    <div id="otpArea">
-      <div class="otp-label">ENTER OTP</div>
-      <input id="hiddenEmailOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
-      <div class="otp-row">
-        <input class="otp-box" maxlength="1" inputmode="numeric">
-        <input class="otp-box" maxlength="1" inputmode="numeric">
-        <input class="otp-box" maxlength="1" inputmode="numeric">
-        <input class="otp-box" maxlength="1" inputmode="numeric">
-        <input class="otp-box" maxlength="1" inputmode="numeric">
-        <input class="otp-box" maxlength="1" inputmode="numeric">
-      </div>
-    </div>
-    <button class="login-btn" type="submit" id="mainBtn">Login</button>
-    <p id="error"></p>
+    <input class="input-box" id="username" placeholder="USER NAME">
+    <input class="input-box" id="email" placeholder="EMAIL ID" type="email">
+    <input class="input-box" id="password" placeholder="PASSWORD" type="password">
+    <div id="otpArea"><div class="otp-label">ENTER OTP</div><div class="otp-row">
+        <input class="otp-box" maxlength="1" inputmode="numeric"><input class="otp-box" maxlength="1" inputmode="numeric"><input class="otp-box" maxlength="1" inputmode="numeric"><input class="otp-box" maxlength="1" inputmode="numeric"><input class="otp-box" maxlength="1" inputmode="numeric"><input class="otp-box" maxlength="1" inputmode="numeric">
+    </div></div>
+    <button class="login-btn" type="submit" id="mainBtn">Login</button><p id="error"></p>
   </form>
   <p class="login-link" id="goToPhone">Login with Phone Number</p>
 </div>
 
 <div class="card" id="phoneCard" style="display:none">
-  <div class="logo-wrap">
-    <div class="logo-icon">⌬</div>
-    <h2 class="logo-title">Predict AI</h2>
-    <p class="logo-sub">smart disease system</p>
-  </div>
+  <div class="logo-wrap"><div class="logo-icon">⌬</div><h2 class="logo-title">Predict AI</h2><p class="logo-sub">smart disease system</p></div>
   <form id="phoneForm">
-    <input class="input-box" id="p_username" placeholder="USER NAME" autocomplete="username">
-    <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric" autocomplete="tel">
-    <div id="otpArea2">
-      <div class="otp-label">ENTER OTP</div>
-      <input id="hiddenPhoneOtp" class="hidden-otp" type="text" autocomplete="one-time-code" inputmode="numeric">
-      <div class="otp-row">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
-        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
-      </div>
-    </div>
-    <button class="login-btn" type="submit" id="phoneBtn">Send OTP</button>
-    <p id="error2"></p>
+    <input class="input-box" id="p_username" placeholder="USER NAME">
+    <input class="input-box" id="phone" placeholder="PHONE NO." maxlength="10" inputmode="numeric">
+    <div id="otpArea2"><div class="otp-label">ENTER OTP</div><div class="otp-row">
+        <input class="otp-box otp-box2" maxlength="1" inputmode="numeric"><input class="otp-box otp-box2" maxlength="1" inputmode="numeric"><input class="otp-box otp-box2" maxlength="1" inputmode="numeric"><input class="otp-box otp-box2" maxlength="1" inputmode="numeric"><input class="otp-box otp-box2" maxlength="1" inputmode="numeric"><input class="otp-box otp-box2" maxlength="1" inputmode="numeric">
+    </div></div>
+    <button class="login-btn" type="submit" id="phoneBtn">Send OTP</button><p id="error2"></p>
   </form>
   <p class="login-link" id="goToEmail">← Back to Email Login</p>
 </div>
@@ -91,14 +56,8 @@ let otpSentEmail = false;
 let otpSentPhone = false;
 let tempUser = {};
 
-(function(){
-  try{
-    let saved = JSON.parse(localStorage.getItem('predict_ai_login')||'null');
-    if(saved && saved.expire > Date.now()){
-      window.location.href='/welcome';
-    }
-  }catch(e){}
-})();
+// NO AUTO REDIRECT FROM LOCALSTORAGE - FIXES LOOP
+localStorage.removeItem('predict_ai_login');
 
 goToPhone.onclick = () => { emailCard.style.display="none"; phoneCard.style.display="block"; }
 goToEmail.onclick = () => { phoneCard.style.display="none"; emailCard.style.display="block"; }
@@ -109,30 +68,15 @@ function otpAutoJump(boxes){
     b.addEventListener('keydown', (e)=>{ if(e.key==='Backspace' && !b.value && i>0) boxes[i-1].focus(); });
   });
 }
-
 const emailBoxes = document.querySelectorAll('#otpArea .otp-box');
 const phoneBoxes = document.querySelectorAll('#otpArea2 .otp-box');
-otpAutoJump(emailBoxes); 
-otpAutoJump(phoneBoxes);
-
+otpAutoJump(emailBoxes); otpAutoJump(phoneBoxes);
 function autoFillOtp(boxes, otpStr){
   if(!otpStr) return;
   otpStr = otpStr.toString().replace(/\D/g,'').slice(0,6);
   boxes.forEach((b,i)=>{ b.value = otpStr[i] || ''; });
 }
 
-function saveLongLogin(user){
-  let tenYears = 10 * 365 * 24 * 60 * 60 * 1000;
-  localStorage.setItem('predict_ai_login', JSON.stringify({
-    user: user,
-    expire: Date.now() + tenYears,
-    loginTime: new Date().toISOString()
-  }));
-  localStorage.setItem('login_user', JSON.stringify(user));
-  localStorage.setItem('user_email', user.email || user.phone || '');
-}
-
-// ===== EMAIL LOGIN - FIXED =====
 document.getElementById('emailForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=document.getElementById('username').value.trim(); 
@@ -153,22 +97,18 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
         body:JSON.stringify({email: em, username: u})
       });
       let d = await res.json();
-      console.log("send_otp", d);
       if(d.status === 'sent'){
         if(d.otp_autofill){ autoFillOtp(emailBoxes, d.otp_autofill); }
-        err.innerText = d.email_sent ? "OTP sent to Gmail!" : "OTP generated (Testing: "+d.otp_autofill+")";
+        err.innerText = d.email_sent ? "OTP sent to Gmail!" : "OTP: "+d.otp_autofill+" (dev)";
         err.style.color = "#00a651";
         document.getElementById('mainBtn').innerText="Verify & Login";
         otpSentEmail=true;
       } else {
-        err.innerText = d.message || "Failed to send OTP";
-        err.style.color = "red";
+        err.innerText = d.message || "Failed"; err.style.color="red";
         document.getElementById('mainBtn').innerText="Login";
       }
     }catch(er){
-      console.error(er);
-      err.innerText="Failed to send - Try again";
-      err.style.color="#ff3b3b";
+      err.innerText="Failed to send - Try again"; err.style.color="#ff3b3b";
       document.getElementById('mainBtn').innerText="Login";
     }
   }else{
@@ -183,13 +123,10 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
         body:JSON.stringify({email:tempUser.email,otp:otp,username:tempUser.username})
       });
       let data=await res.json();
-      console.log("verify", data);
       if(data.status=="success"){ 
-        saveLongLogin(tempUser);
-        window.location.href='/welcome'; 
+        window.location.href=data.redirect; // server se aaya /welcome ya /pp
       } else { 
-        err.innerText=data.message || "Invalid OTP"; 
-        err.style.color="#ff3b3b"; 
+        err.innerText=data.message || "Invalid OTP"; err.style.color="#ff3b3b"; 
         document.getElementById('mainBtn').innerText="Verify & Login"; 
       }
     }catch(er){
@@ -199,7 +136,6 @@ document.getElementById('emailForm').addEventListener('submit', async function(e
   }
 });
 
-// ===== PHONE LOGIN - FIXED: AB SERVER SE OTP AYEGA =====
 document.getElementById('phoneForm').addEventListener('submit', async function(e){
   e.preventDefault();
   let u=document.getElementById('p_username').value.trim(); 
@@ -218,20 +154,17 @@ document.getElementById('phoneForm').addEventListener('submit', async function(e
         body: JSON.stringify({phone: ph, username: u})
       });
       let d = await res.json();
-      console.log("phone send_otp", d);
       if(d.status === 'sent'){
         autoFillOtp(phoneBoxes, d.otp_autofill);
         document.getElementById("otpArea2").style.display="flex";
         document.getElementById("phoneBtn").innerText="Verify & Login";
         otpSentPhone=true;
-        err.innerText="OTP sent! Testing: "+d.otp_autofill;
-        err.style.color="#00a651";
+        err.innerText="OTP: "+d.otp_autofill; err.style.color="#00a651";
       } else {
         err.innerText=d.message || "Failed";
         document.getElementById("phoneBtn").innerText="Send OTP";
       }
     }catch(er){
-      console.error(er);
       err.innerText="Failed to send OTP";
       document.getElementById("phoneBtn").innerText="Send OTP";
     }
@@ -247,18 +180,14 @@ document.getElementById('phoneForm').addEventListener('submit', async function(e
         body:JSON.stringify({username:tempUser.username,phone:tempUser.phone,otp:otp})
       });
       let data=await res.json();
-      console.log("phone verify", data);
       if(data.status=="success"){
-        saveLongLogin(tempUser);
-        window.location.href='/welcome';
+        window.location.href=data.redirect;
       } else {
-        err.innerText=data.message || "Invalid OTP";
-        err.style.color="#ff3b3b";
+        err.innerText=data.message || "Invalid OTP"; err.style.color="#ff3b3b";
         document.getElementById("phoneBtn").innerText="Verify & Login";
       }
     }catch(er){
-      err.innerText="Verify failed";
-      document.getElementById("phoneBtn").innerText="Verify & Login";
+      err.innerText="Verify failed"; document.getElementById("phoneBtn").innerText="Verify & Login";
     }
   }
 });
