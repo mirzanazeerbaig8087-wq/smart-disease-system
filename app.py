@@ -170,13 +170,64 @@ def emergency_page():
 def doctor_ai_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
     return safe_render('doctor-ai.html')
+
 @app.route('/my-profile')
 @app.route('/profile')
 def my_profile_page():
-    if not session.get('is_logged_in'): return redirect(url_for('login_page'))
-    user_data={'username':session.get('username','User'),'email':session.get('user_email',''),'phone':session.get('user_phone',''),'login_time':session.get('login_time','')}
-    try: return render_template('my_profile.html', user=user_data)
-    except: return render_template('my_profile.html', user=user_data) if False else jsonify(user_data)
+    if not session.get('is_logged_in'): 
+        return redirect(url_for('login_page'))
+    user_data={
+        'username':session.get('username','User'),
+        'email':session.get('user_email',''),
+        'phone':session.get('user_phone',''),
+        'login_time':session.get('login_time','')
+    }
+    # Template dhoondega - my_profile.html ya my-profile.html
+    try:
+        for name in ['my_profile.html', 'my-profile.html', 'profile.html']:
+            if os.path.exists(os.path.join(BASE_DIR, 'templates', name)):
+                return render_template(name, user=user_data)
+    except Exception as e:
+        print(f"Profile template error: {e}")
+    
+    # Agar template hi nahi mila to JSON nahi, seedha HTML page dega
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>My Profile - Predict AI</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+        <style>
+            body{{margin:0;padding:20px 20px 90px 20px;background:radial-gradient(circle at top,#162032,#0a1220);min-height:100vh;font-family:'Poppins',sans-serif;display:flex;justify-content:center}}
+            .card{{width:100%;max-width:400px;background:linear-gradient(180deg,#1c2740,#121a2b);border:1px solid #2a3650;border-radius:18px;padding:25px}}
+        </style>
+    </head>
+    <body>
+        <div class="card">
+            <a href="/pp" style="color:#6bb6ff;text-decoration:none;font-size:12px">← Back to Home</a>
+            <div style="text-align:center;margin:20px 0">
+                <div style="width:80px;height:80px;background:#fff;border-radius:50%;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:36px">👤</div>
+                <h2 style="color:#fff;margin:0">{user_data['username']}</h2>
+                <p style="color:#8a9bb5;font-size:11px;margin-top:4px">{user_data['email'] or 'No email'}</p>
+            </div>
+            <div style="background:#121a2b;border:1px solid #2a3650;border-radius:12px;padding:14px">
+                <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #1e2f4a">
+                    <span style="color:#5a6b8a;font-size:11px">Phone</span>
+                    <span style="color:#fff;font-size:11px">{user_data['phone'] or 'Not added'}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;padding:8px 0">
+                    <span style="color:#5a6b8a;font-size:11px">Login Time</span>
+                    <span style="color:#fff;font-size:11px">{user_data['login_time']}</span>
+                </div>
+            </div>
+            <a href="/logout" style="display:block;text-align:center;margin-top:20px;background:rgba(255,59,59,0.12);border:1px solid #ff3b3b;color:#ff6b6b;padding:12px;border-radius:10px;text-decoration:none;font-weight:600">🚪 Logout</a>
+            <p style="text-align:center;color:#5a6b8a;font-size:9px;margin-top:15px">Predict AI • HIPAA Compliant</p>
+        </div>
+    </body>
+    </html>
+    """
+
 @app.route('/wellbeing')
 def wellbeing_page():
     if not session.get('is_logged_in'): return redirect(url_for('login_page'))
@@ -326,16 +377,31 @@ def predict_route():
     raw=request.form.get('symptoms') or ""
     if not raw.strip(): return redirect(url_for('pp_page'))
     cleaned=parse_symptoms(str(raw), all_symptoms)
-    uploaded_filename = None; uploaded_path = None; image_analysis = None
-    observed_from_image = []; ai_image_text = ""
-    for key in ['medical_report','report','file','photo']:
+    
+    uploaded_filename = None
+    uploaded_path = None
+    uploaded_b64 = None
+    image_analysis = None
+    observed_from_image = []
+    ai_image_text = ""
+    
+    # === PHOTO FIX - SAARE NAAM PAKDEGA ===
+    for key in ['medical_report', 'report_file', 'report_file_camera', 'report', 'file', 'photo']:
         if key in request.files:
             file = request.files.get(key)
-            if file and file.filename and allowed_file(file.filename):
+            if file and file.filename and '.' in file.filename and file.filename.rsplit('.',1)[1].lower() in ALLOWED_EXT:
                 filename = secure_filename(f"{datetime.now().strftime('%Y%m%d_%H%M%S')}_{file.filename}")
                 filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
                 file.save(filepath)
-                uploaded_filename = filename; uploaded_path = f"/uploads/{filename}"
+                uploaded_filename = filename
+                uploaded_path = f"/uploads/{filename}"
+                # PDF ke liye base64 bana liya - yehi PDF me save hoga
+                try:
+                    with open(filepath, "rb") as f:
+                        uploaded_b64 = base64.b64encode(f.read()).decode('utf-8')
+                except Exception as e:
+                    print(f"b64 fail {e}")
+                
                 if filename.lower().split('.')[-1] in ['png','jpg','jpeg','webp']:
                     image_analysis = analyze_medical_image(filepath)
                     if image_analysis:
@@ -345,6 +411,7 @@ def predict_route():
                             csym = normalize(sym, all_symptoms)
                             if csym not in cleaned: cleaned.append(csym)
                 break
+
     scores=[]
     for dname, info in diseases_data.items():
         if not isinstance(info, dict): continue
@@ -354,15 +421,27 @@ def predict_route():
     scores.sort(key=lambda x:x[1], reverse=True)
     if scores: dname, dinfo = scores[0][0], scores[0][2]; conf=92 if scores[0][1]>=2 else 75
     else: dname="General Checkup"; dinfo={}; conf=45
-    desc=get_field(dinfo, ['Description','description']); diet=get_field(dinfo, ['Diet','diet']); exercise=get_field(dinfo, ['Exercise','exercise']); precaution=get_field(dinfo, ['Precautions','precaution']); lab=get_field(dinfo, ['Lab_Tests','lab_tests']); doctor=get_field(dinfo, ['Specialist','specialist','doctor'])
-    ai_data=None
-    if not desc or image_analysis or conf<80:
-        ai_data=generate_ai_details(dname, cleaned, ai_image_text)
+    
+    desc=get_field(dinfo, ['Description','description'])
+    diet=get_field(dinfo, ['Diet','diet'])
+    exercise=get_field(dinfo, ['Exercise','exercise'])
+    precaution=get_field(dinfo, ['Precautions','precaution'])
+    lab=get_field(dinfo, ['Lab_Tests','lab_tests'])
+    doctor=get_field(dinfo, ['Specialist','specialist','doctor'])
+    
+    # Ab har baar AI call hoga taaki Groq/Gemini test ho
+    ai_data=generate_ai_details(dname, cleaned, ai_image_text)
     if ai_data:
-        desc=desc or ai_data.get('Description',''); 
-        if ai_image_text and ai_image_text not in desc: desc = f"{desc} Image: {ai_image_text}"
-        diet=diet or ai_data.get('Diet',''); exercise=exercise or ai_data.get('Exercise',''); precaution=precaution or ai_data.get('Precautions','')
-        if not lab: lab=ai_data.get('Lab_Tests',[]); doctor=doctor or ai_data.get('Specialist','')
+        desc= ai_data.get('Description','') or desc
+        if ai_image_text and ai_image_text not in str(desc):
+            desc = f"{desc} Image finding: {ai_image_text}"
+        diet= ai_data.get('Diet','') or diet
+        exercise= ai_data.get('Exercise','') or exercise
+        precaution= ai_data.get('Precautions','') or precaution
+        if not lab or lab==["CBC","General Checkup"]:
+            lab=ai_data.get('Lab_Tests',[]) or lab
+        doctor= ai_data.get('Specialist','') or doctor
+
     if not desc: desc=f"{dname} detected. Related to {', '.join(cleaned[:3])}."
     if not diet: diet="Light balanced diet, avoid oily food, more water"
     if not exercise: exercise="30 min walk, breathing exercise, rest"
@@ -370,11 +449,82 @@ def predict_route():
     if not lab: lab=["CBC","General Checkup"]
     if isinstance(lab, str): lab=[s.strip() for s in re.split(r',|;', lab) if s.strip()]
     if not doctor: doctor="General Physician"
-    result={'disease':dname,'confidence':round(float(conf),2),'description':desc,'diet':diet,'exercise':exercise,'precaution':precaution,'lab_tests':lab,'doctor':doctor,'symptoms':", ".join(cleaned),'original_input':raw,'patient_name':request.form.get('patient_name') or session.get('username','Patient'),'age':request.form.get('age') or "N/A",'gender':request.form.get('gender') or "N/A",'date':datetime.now().strftime("%d-%m-%Y %H:%M"),'duration':request.form.get('duration') or "N/A",'uploaded_file': uploaded_filename, 'uploaded_path': uploaded_path,'image_analysis': image_analysis, 'observed_from_image': observed_from_image,'ai_observation': ai_image_text}
+    
+    result={
+        'disease':dname,'confidence':round(float(conf),2),'description':desc,'diet':diet,'exercise':exercise,
+        'precaution':precaution,'lab_tests':lab,'doctor':doctor,'symptoms':", ".join(cleaned),
+        'original_input':raw,'patient_name':request.form.get('patient_name') or session.get('username','Patient'),
+        'age':request.form.get('age') or "N/A",'gender':request.form.get('gender') or "N/A",
+        'date':datetime.now().strftime("%d-%m-%Y %H:%M"),'duration':request.form.get('duration') or "N/A",
+        'uploaded_file': uploaded_filename, 'uploaded_path': uploaded_path,
+        'uploaded_b64': uploaded_b64,
+        'image_analysis': image_analysis, 'observed_from_image': observed_from_image,
+        'ai_observation': ai_image_text,
+        'ai_used': 'Yes - ' + (ai_data.get('Specialist','AI') if ai_data else 'No - API key missing')
+    }
     session['last_result']=result
     session.permanent=True
     session.modified=True
     return redirect(url_for('result_page'))
+
+def generate_ai_details(disease_name, symptoms_list, image_observation=""):
+    print(f"AI CALL: {disease_name} | Symptoms: {symptoms_list}")
+    prompt = f"Disease: {disease_name}, Symptoms: {','.join(symptoms_list)}. Image: {image_observation}. Give ONLY JSON: {{\"Description\":\"2-3 lines simple\",\"Diet\":\"what to eat 1 line\",\"Exercise\":\"2 exercises\",\"Precautions\":\"2 precautions\",\"Lab_Tests\":[\"CBC\"],\"Specialist\":\"General Physician\"}}"
+    
+    # 1. GEMINI
+    k = get_env('GEMINI_API_KEY') or get_env('GOOGLE_API_KEY')
+    if k:
+        try:
+            print("Trying GEMINI...")
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={k}"
+            r = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, timeout=25)
+            print(f"GEMINI status: {r.status_code}")
+            j = r.json()
+            txt = j['candidates'][0]['content']['parts'][0]['text']
+            m=re.search(r'\{.*\}', txt, re.DOTALL)
+            if m: 
+                print("GEMINI SUCCESS")
+                return json.loads(m.group())
+        except Exception as e: print(f"GEMINI fail {e}")
+
+    # 2. GROQ
+    k = get_env('GROQ_API_KEY')
+    if k:
+        try:
+            print("Trying GROQ...")
+            r=requests.post("https://api.groq.com/openai/v1/chat/completions",headers={"Authorization": f"Bearer {k}"},json={"model":"llama-3.1-8b-instant","messages":[{"role":"user","content":prompt}]},timeout=25)
+            print(f"GROQ status: {r.status_code}")
+            txt=r.json()['choices'][0]['message']['content']
+            m=re.search(r'\{.*\}', txt, re.DOTALL)
+            if m: 
+                print("GROQ SUCCESS")
+                return json.loads(m.group())
+        except Exception as e: print(f"GROQ fail {e}")
+
+    # 3. OPENROUTER
+    k = get_env('OPENROUTER_API_KEY')
+    if k:
+        try:
+            print("Trying OPENROUTER...")
+            r=requests.post("https://openrouter.ai/api/v1/chat/completions",headers={"Authorization": f"Bearer {k}"},json={"model":"meta-llama/llama-3.1-8b-instruct:free","messages":[{"role":"user","content":prompt}]},timeout=25)
+            txt=r.json()['choices'][0]['message']['content']
+            m=re.search(r'\{.*\}', txt, re.DOTALL)
+            if m: return json.loads(m.group())
+        except Exception as e: print(f"OPENROUTER fail {e}")
+    
+    # 4. HF
+    k = get_env('HF_TOKEN') or get_env('HUGGINGFACE_API_KEY')
+    if k:
+        try:
+            print("Trying HF...")
+            r=requests.post("https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.3",headers={"Authorization": f"Bearer {k}"},json={"inputs": prompt},timeout=30)
+            txt = r.json()[0]['generated_text']
+            m=re.search(r'\{.*\}', txt, re.DOTALL)
+            if m: return json.loads(m.group())
+        except Exception as e: print(f"HF fail {e}")
+
+    print("ALL AI FAILED - NO KEY FOUND")
+    return None
 
 @app.route('/api/doctor_chat', methods=['GET','POST'])
 def doctor_chat_api():
