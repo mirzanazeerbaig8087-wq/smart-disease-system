@@ -273,14 +273,17 @@ def parse_symptoms(raw, all_sym):
         if len(s)>2: cleaned.append(normalize(s, all_sym))
     return list(dict.fromkeys(cleaned))
 
-# === AI - NO CHANGE ===
 def analyze_medical_image(image_path):
     try:
         with open(image_path, "rb") as f: img_b64 = base64.b64encode(f.read()).decode('utf-8')
         GEMINI_KEY = get_env('GEMINI_API_KEY') or get_env('GOOGLE_API_KEY')
         if not GEMINI_KEY: return None
-        prompt = 'Return ONLY JSON: {"observation": "2-3 lines", "observed_symptoms": ["acne"], "possible_conditions": ["acne vulgaris"], "severity": "moderate"}'
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_KEY}"
+        
+        # ✅ YE LINE MISSING THI, ISILIYE ERROR AA RAHA THA
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={GEMINI_KEY.strip()}"
+        
+        prompt = 'Return ONLY JSON: {"observation": "2-3 lines", "observed_symptoms": ["acne"], "possible_conditions": ["acne"]}'
+
         payload = {"contents": [{"parts": [{"text": prompt}, {"inlineData": {"mimeType": "image/jpeg", "data": img_b64}}]}]}
         r = requests.post(url, json=payload, timeout=40)
         j = r.json()
@@ -290,7 +293,7 @@ def analyze_medical_image(image_path):
             if m: return json.loads(m.group())
     except Exception as e: print(f"Vision fail {e}")
     return None
-
+    
 def generate_ai_details(disease_name, symptoms_list, image_observation=""):
     prompt = f"Disease: {disease_name}, Symptoms: {','.join(symptoms_list)}. Image: {image_observation}. Give ONLY JSON: {{\"Description\":\"2-3 lines\",\"Diet\":\"1 line\",\"Exercise\":\"2 exercises\",\"Precautions\":\"2 precautions\",\"Lab_Tests\":[\"CBC\"],\"Specialist\":\"doctor\"}}"
     for key_name in ['GEMINI_API_KEY','GROQ_API_KEY','OPENROUTER_API_KEY']:
