@@ -18,8 +18,18 @@ os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 ALLOWED_EXT = {'png','jpg','jpeg','pdf','webp'}
 
-def get_env(key):
-    return os.getenv(key) or os.getenv(key.upper()) or os.getenv(key.lower()) or ""
+
+import os
+
+def get_env(name):
+    # Vercel pe kabhi-kabhi key me space/newline aa jata hai
+    for k in [name, name.upper(), name.lower()]:
+        v = os.getenv(k) or os.environ.get(k) or ""
+        if v:
+            v = v.strip().strip('"').strip("'").strip()
+            if len(v) > 5:
+                return v
+    return ""
 
 @app.before_request
 def make_session_permanent():
@@ -538,6 +548,20 @@ def doctor_chat_api():
     except Exception as e:
         print(f"Doctor chat error {e}")
         return jsonify({'reply':"Network slow hai, fir se bolo."}),200
+
+# ... tere saare @app.route('/api/doctor_chat') etc ke BAAD ...
+
+@app.route('/debug/env')
+def debug_env():
+    html = "<h3>Env Check</h3>"
+    for name in ['GEMINI_API_KEY','GOOGLE_API_KEY','GROQ_API_KEY','OPENROUTER_API_KEY','HF_TOKEN','HUGGINGFACE_API_KEY']:
+        v = get_env(name)
+        if v:
+            html += f"✅ {name}: FOUND len={len(v)} start={v[:6]}...{v[-4:]}<br>"
+        else:
+            html += f"❌ {name}: MISSING (os.getenv returned empty)<br>"
+    html += f"<br>All os.environ keys: {list(os.environ.keys())[:20]}..."
+    return html
 
 if __name__=='__main__': 
     port = int(os.getenv("PORT", 7860))
