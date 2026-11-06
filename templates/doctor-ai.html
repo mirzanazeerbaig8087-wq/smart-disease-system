@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>⌬ Predict AI - smart disease system</title>
+<title>Predict AI - Smart Disease System</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -20,31 +20,31 @@ body{font-family:'Inter', sans-serif; background:#080a0f; color:white;}
 
 <header class="h-[64px] flex items-center justify-between px-6 border-b border-[#1e2436] bg-[#0b0e18]/80 backdrop-blur sticky top-0 z-20">
 <div class="flex items-center gap-3">
-<div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-[18px]">⌬</div>
+<div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center font-bold text-[18px]">P</div>
 <div class="leading-tight">
 <span class="font-semibold text-[16px] block">Predict AI</span>
 <span class="text-[10px] text-gray-400 tracking-widest">SMART DISEASE SYSTEM</span>
 </div>
-<span id="statusBadge" class="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 ml-2">● Online - Checking...</span>
+<span id="statusBadge" class="text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 ml-2">Online - Checking...</span>
 </div>
 <div class="flex gap-2">
-<a href="/pp" class="px-4 py-2 rounded-full bg-[#11141f] border border-[#1e2436] text-sm hover:bg-[#1a1f32]">← Symptom Check</a>
+<a href="/pp" class="px-4 py-2 rounded-full bg-[#11141f] border border-[#1e2436] text-sm hover:bg-[#1a1f32]">Symptom Check</a>
 <button id="historyBtn" class="px-4 py-2 rounded-full bg-[#11141f] border border-[#1e2436] text-sm hover:bg-[#1a1f32]">History</button>
 </div>
 </header>
 
 <div id="chatBox" class="flex-1 overflow-y-auto px-4 md:px-[20%] py-6 space-y-5">
 <div class="flex gap-3">
-<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shrink-0">⌬</div>
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shrink-0">P</div>
 <div class="ai-bubble chat-bubble p-4 text-[14.5px] text-gray-200">
-Hi, I am your AI doctor from Predict AI (410 Diseases). Aap apni health problem batao, kisi bhi language me.
+Hello, I am your AI Doctor from Predict AI. Please describe your health problem in detail. You can write in English.
 </div>
 </div>
 </div>
 
 <div id="typing" class="hidden px-4 md:px-[20%] pb-2">
 <div class="flex gap-3">
-<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold">⌬</div>
+<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold">P</div>
 <div class="ai-bubble p-4 px-5 rounded-full flex gap-1"><span class="dot w-2 h-2 bg-gray-400 rounded-full"></span><span class="dot w-2 h-2 bg-gray-400 rounded-full"></span><span class="dot w-2 h-2 bg-gray-400 rounded-full"></span></div>
 </div>
 </div>
@@ -52,11 +52,11 @@ Hi, I am your AI doctor from Predict AI (410 Diseases). Aap apni health problem 
 <div class="p-4 bg-[#080a0f] border-t border-[#1e2436] sticky bottom-0">
 <div class="max-w-3xl mx-auto">
 <div class="flex items-end gap-2 bg-[#11141f] border border-[#232a41] rounded-[26px] p-2 pl-4 shadow-2xl focus-within:border-indigo-500/50 transition">
-<textarea id="userInput" rows="1" placeholder="Message Predict AI in any language..." class="flex-1 bg-transparent outline-none text-[15px] placeholder:text-gray-500 resize-none max-h-[120px] py-2"></textarea>
-<button id="micBtn" class="w-9 h-9 rounded-full bg-[#1a1f32] flex items-center justify-center hover:bg-[#232a41] border border-[#232a41]">🎤</button>
-<button id="sendBtn" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 font-bold">↑</button>
+<textarea id="userInput" rows="1" placeholder="Describe your symptoms in detail..." class="flex-1 bg-transparent outline-none text-[15px] placeholder:text-gray-500 resize-none max-h-[120px] py-2"></textarea>
+<button id="micBtn" class="w-9 h-9 rounded-full bg-[#1a1f32] flex items-center justify-center hover:bg-[#232a41] border border-[#232a41]">Mic</button>
+<button id="sendBtn" class="w-9 h-9 rounded-full bg-white text-black flex items-center justify-center hover:bg-gray-200 font-bold">Send</button>
 </div>
-<p class="text-[11px] text-center text-gray-500 mt-3">Predict AI can make mistakes. Check important info. | <span id="footerStatus">Gemini + Groq Active</span></p>
+<p class="text-[11px] text-center text-gray-500 mt-3">Predict AI can make mistakes. Please verify important information. | <span id="footerStatus">Gemini + Groq Active</span></p>
 </div>
 </div>
 
@@ -64,7 +64,7 @@ Hi, I am your AI doctor from Predict AI (410 Diseases). Aap apni health problem 
 <div class="w-full max-w-[380px] bg-[#0b0e18] border-l border-[#1e2436] h-full flex flex-col">
 <div class="p-5 border-b border-[#1e2436] flex justify-between items-center">
 <h3 class="font-semibold">Your AI Chats</h3>
-<button id="closeHistory" class="w-8 h-8 rounded-full bg-[#11141f] border border-[#1e2436]">✕</button>
+<button id="closeHistory" class="w-8 h-8 rounded-full bg-[#11141f] border border-[#1e2436]">X</button>
 </div>
 <div id="historyList" class="flex-1 overflow-y-auto p-4 space-y-3 text-sm text-gray-300"></div>
 <div class="p-4 border-t border-[#1e2436]">
@@ -108,17 +108,17 @@ function addMessage(text, isUser, source){
  const div = document.createElement('div');
  div.className = 'flex gap-3 ' + (isUser ? 'justify-end' : '');
  const safeText = text.replace(/</g,"&lt;").replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
- div.innerHTML = isUser ? `<div class="user-bubble chat-bubble p-3.5 px-4 text-[14.5px]">${safeText}</div>` : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shrink-0">⌬</div><div class="ai-bubble chat-bubble p-4 text-[14.5px] text-gray-200"><div class="text-[10px] text-gray-500 mb-1">${source ? '● '+source : ''}</div>${safeText}</div>`;
+ div.innerHTML = isUser ? `<div class="user-bubble chat-bubble p-3.5 px-4 text-[14.5px]">${safeText}</div>` : `<div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-xs font-bold shrink-0">P</div><div class="ai-bubble chat-bubble p-4 text-[14.5px] text-gray-200"><div class="text-[10px] text-gray-500 mb-1">${source ? '● '+source : ''}</div>${safeText}</div>`;
  chatBox.appendChild(div); chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 // CHECK API STATUS ON LOAD
 fetch('/api/doctor_chat').then(r=>r.json()).then(d=>{
-  statusBadge.textContent = `● Online - ${d.gemini?'Gemini':''} ${d.groq?'+ Groq':''} • ${d.diseases||410} Diseases`;
+  statusBadge.textContent = `Online - ${d.gemini?'Gemini':''} ${d.groq?'+ Groq':''} • ${d.diseases||410} Diseases`;
   statusBadge.className = "text-[11px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full border border-emerald-500/30 ml-2";
   footerStatus.textContent = `${d.gemini?'Gemini':''} ${d.groq?'+ Groq':''} Active • ${d.diseases||410} Diseases`;
 }).catch(()=>{
-  statusBadge.textContent = "● Offline - Check Keys";
+  statusBadge.textContent = "Offline - Please check API keys";
   statusBadge.className = "text-[11px] bg-red-500/20 text-red-400 px-2 py-1 rounded-full border border-red-500/30 ml-2";
 });
 
@@ -130,28 +130,28 @@ async function sendMessage(){
    const res = await fetch('/api/doctor_chat', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({message: msg})});
    const data = await res.json(); 
    typing.classList.add('hidden');
-   addMessage(data.reply || "No reply", false, data.source); 
+   addMessage(data.reply || "No reply received. Please try again.", false, data.source); 
    saveToHistory(msg, data.reply, data.source);
  }catch(e){ 
    typing.classList.add('hidden'); 
-   addMessage("⚠️ Network error! Vercel me GEMINI_API_KEY + GROQ_API_KEY daalo aur Redeploy karo. Error: "+e.message, false, "Error"); 
+   addMessage("Network error. Please check your connection and try again. Error: "+e.message, false, "Error"); 
  }
 }
 sendBtn.onclick = sendMessage;
 userInput.addEventListener('keydown', e=>{ if(e.key==='Enter' && !e.shiftKey){ e.preventDefault(); sendMessage(); }});
 userInput.addEventListener('input', ()=>{ userInput.style.height='auto'; userInput.style.height=userInput.scrollHeight+'px'; });
 micBtn.onclick = ()=>{
- if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){ alert("Voice not supported"); return; }
+ if(!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)){ alert("Voice input is not supported in this browser."); return; }
  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
- const rec = new SR(); rec.lang='en-IN'; rec.start();
+ const rec = new SR(); rec.lang='en-US'; rec.start();
  micBtn.innerHTML='<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>';
  rec.onresult = (e)=>{ userInput.value = e.results[0][0].transcript; };
- rec.onend = ()=>{ micBtn.innerHTML='🎤'; };
+ rec.onend = ()=>{ micBtn.innerHTML='Mic'; };
 };
 historyBtn.onclick = ()=>{ renderHistory(); historyModal.classList.remove('hidden'); };
 closeHistory.onclick = ()=> historyModal.classList.add('hidden');
 historyModal.onclick = (e)=>{ if(e.target===historyModal) historyModal.classList.add('hidden'); };
-clearHistory.onclick = ()=>{ if(confirm('Clear all?')){ chatHistory=[]; localStorage.removeItem('predict_ai_chats'); renderHistory(); }};
+clearHistory.onclick = ()=>{ if(confirm('Clear all chats?')){ chatHistory=[]; localStorage.removeItem('predict_ai_chats'); renderHistory(); }};
 renderHistory();
 </script>
 </body>
