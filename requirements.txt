@@ -8,3 +8,7 @@ Werkzeug==2.3.7
 mysql-connector-python==8.1.0
 gunicorn==21.2.0
 Pillow==11.1.0
+groq
+openai
+google-generativeai
+huggingface-hub
