@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Predict AI - Book Doctor & Lab Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a1220">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0a1220;font-family:'Poppins',sans-serif;display:flex;justify-content:center;padding:14px 14px 90px 14px;color:#e6eefc}
+.main{width:100%;max-width:780px;background:linear-gradient(180deg,#1e2a44,#111b2f);border:1px solid #2a3650;border-radius:18px;padding:18px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.logo{color:#6aa8ff;font-weight:800;font-size:19px;line-height:1}
+.logo small{display:block;color:#6b7fa3;font-size:7.5px;letter-spacing:1.2px}
+.back{width:32px;height:32px;background:#2a344d;border:1px solid #3a4a6a;border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;text-decoration:none;font-size:16px}
+.disease-bar{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.disease-bar b{color:#5cb3ff;font-size:14px}
+.disease-bar span{font-size:11px;color:#aabbd5}
+.tabs{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px}
+.tab{padding:11px 6px;border-radius:10px;background:#2a344d;border:1px solid #3a4a6a;color:#c2d1e8;font-size:11px;font-weight:600;cursor:pointer;text-align:center}
+.tab.active{background:#2f7bff;color:#fff;border-color:#2f7bff}
+.filters{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:12px;margin-bottom:12px}
+.filters label{font-size:9px;color:#7b8aa5;letter-spacing:.5px;text-transform:uppercase}
+select,input,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #3a4a6a;background:#1f2d4a;color:#fff;font-family:'Poppins';font-size:12px;margin-top:5px;outline:none}
+.filter-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.search-row{display:flex;gap:8px;margin-top:10px}
+.search-row input{flex:1}
+.search-btn{background:#2f7bff;color:#fff;border:none;padding:10px 18px;border-radius:8px;font-weight:700;cursor:pointer;font-family:'Poppins';font-size:12px;white-space:nowrap}
+.card{background:#2a344d;border:1px solid #3a4a6a;border-radius:12px;padding:14px;margin-bottom:10px;display:flex;gap:12px}
+.avatar{width:52px;height:52px;min-width:52px;border-radius:50%;background:#1f2d4a;border:1px solid #3a4a6a;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#5cb3ff}
+.card h4{margin:0;font-size:13px;color:#fff}
+.card p{margin:3px 0;font-size:11px;color:#aabbd5;line-height:1.5}
+.badge{display:inline-block;padding:3px 8px;border-radius:20px;font-size:9px;background:#1f2d4a;border:1px solid #3a4a6a;color:#7bc8ff;margin-right:4px}
+.badge.green{color:#4ade80;border-color:#14532d;background:#052e16}
+.price{font-size:13px;font-weight:700;color:#fff}
+.price small{font-size:10px;color:#7b8aa5;text-decoration:line-through;font-weight:400}
+.btn{border:none;padding:9px 14px;border-radius:20px;font-size:11px;font-weight:700;cursor:pointer;font-family:'Poppins'}
+.btn-blue{background:#2f7bff;color:#fff}
+.btn-green{background:#22c55e;color:#000}
+.btn-purple{background:#8b5cf6;color:#fff}
+.btn-outline{background:#1f2d4a;color:#c2d1e8;border:1px solid #3a4a6a}
+.slot{display:inline-block;padding:6px 10px;border-radius:20px;font-size:10px;background:#1f2d4a;border:1px solid #3a4a6a;color:#c2d1e8;margin:3px;cursor:pointer}
+.slot.active{background:#2f7bff;color:#fff;border-color:#2f7bff}
+.section{display:none}
+.section.active{display:block}
+.form-box{background:#1f2d4a;border:1px solid #3a4a6a;border-radius:10px;padding:12px;margin-top:12px}
+.success{background:#052e16;border:1px solid #14532d;border-radius:12px;padding:14px;text-align:center;display:none;margin-top:12px}
+#videoBox{display:none;margin-top:12px;height:340px;border-radius:12px;overflow:hidden;border:1px solid #3a4a6a;background:#000}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(11,14,24,0.98);border-top:1px solid #1e2436;display:flex;justify-content:space-around;padding:8px 0 14px 0;z-index:9999}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;color:#5a6b8a;font-size:9px;flex:1;cursor:pointer}
+.nav-item.active{color:#3a7bff}
+/* SURVEY POPUP */
+#surveyModal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:9999;align-items:center;justify-content:center;padding:16px}
+#surveyModal.active{display:flex}
+.survey-box{background:#1e2a44;border:1px solid #3a4a6a;border-radius:16px;padding:20px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto}
+.stars{display:flex;gap:6px;justify-content:center;margin:10px 0}
+.star{font-size:32px;cursor:pointer;color:#3a4a6a}
+.star.active{color:#facc15}
+.opt-row{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0}
+.opt{padding:7px 12px;border-radius:20px;background:#1f2d4a;border:1px solid #3a4a6a;color:#c2d1e8;font-size:11px;cursor:pointer}
+.opt.active{background:#2f7bff;color:#fff;border-color:#2f7bff}
+@media(max-width:640px){.filter-row{grid-template-columns:1fr 1fr}.card{flex-direction:column}.avatar{width:46px;height:46px}}
+</style>
+</head>
+<body>
+<div class="main">
+<div class="top">
+<div><div class="logo">Predict AI<small>SMART DISEASE SYSTEM</small></div></div>
+<a class="back" href="/pp">&larr;</a>
+</div>
+
+<div class="disease-bar">
+<div><b>{{ result.disease or 'General Health' }}</b><br><span>Patient: {{ result.patient_name }} | {{ result.age }} Y | {{ result.gender }}</span></div>
+<div style="text-align:right"><span>For this condition</span><br><b style="color:#4ade80;font-size:11px">Specialist Available</b></div>
+</div>
+
+<div class="tabs">
+<div class="tab" id="tab1" onclick="showTab(1)">Doctor Visit</div>
+<div class="tab active" id="tab2" onclick="showTab(2)">Lab Test - Home</div>
+<div class="tab" id="tab3" onclick="showTab(3)">Video Consult</div>
+</div>
+
+<!-- TAB 1 : DOCTOR -->
+<div class="section" id="sec1">
+<div class="filters">
+<label>Filter Doctors</label>
+<div class="filter-row" style="margin-top:8px">
+<div><label>Sort By</label><select id="sortDoc" onchange="renderDoctors()"><option value="near">Nearest First</option><option value="low">Low Price First</option><option value="high">High Rating First</option><option value="exp">Most Experience</option></select></div>
+<div><label>Doctor Type</label><select id="typeDoc" onchange="renderDoctors()"><option value="all">All Doctors</option><option value="MBBS">MBBS Only</option><option value="Specialist">Specialist Only</option><option value="MD">MD / MS</option></select></div>
+<div><label>Fees Range</label><select id="feeDoc" onchange="renderDoctors()"><option value="all">Any Fees</option><option value="low">Under Rs. 300</option><option value="mid">Rs. 300 - 600</option><option value="high">Rs. 600 and Above</option></select></div>
+</div>
+</div>
+<div id="doctorList"><p style="text-align:center;color:#7b8aa5">Loading doctors...</p></div>
+<div class="form-box" id="bookForm1" style="display:none">
+<h4 style="margin:0 0 10px 0;font-size:12px;color:#5cb3ff">Confirm Appointment - <span id="selDocName"></span></h4>
+<label>Date</label><input type="date" id="aptDate">
+<label>Time Slot</label><div style="margin-top:6px"><span class="slot" onclick="pickSlot(this,'10:00 AM')">10:00 AM</span><span class="slot" onclick="pickSlot(this,'12:00 PM')">12:00 PM</span><span class="slot" onclick="pickSlot(this,'03:00 PM')">03:00 PM</span><span class="slot" onclick="pickSlot(this,'05:00 PM')">05:00 PM</span><span class="slot" onclick="pickSlot(this,'07:00 PM')">07:00 PM</span></div>
+<label style="margin-top:10px;display:block">Address / Note</label><input id="aptNote" placeholder="Home address or note">
+<button class="btn btn-green" style="width:100%;margin-top:12px;padding:12px" onclick="confirmDoctorBooking()">Confirm Appointment</button>
+</div>
+<div class="success" id="success1"></div>
+</div>
+
+<!-- TAB 2 : LAB TEST - SEARCH WALA -->
+<div class="section active" id="sec2">
+<div class="filters">
+<label>Home Sample Collection - Lab Executive Will Visit Your Home</label>
+<p style="font-size:11px;color:#aabbd5;margin:8px 0 0 0">For <b style="color:#5cb3ff">{{ result.disease }}</b> - Recommended Tests:</p>
+
+<!-- SEARCH BUTTON - GREEN LINE WALI JAGAH -->
+<div class="search-row">
+<input id="labSearch" placeholder="Search Lab Test - Type CBC, Dengue, Thyroid, Vitamin D..." onkeyup="renderLabs()">
+<button class="search-btn" onclick="renderLabs()">Search</button>
+</div>
+<p id="searchResultText" style="font-size:10px;color:#7bc8ff;margin:6px 0 0 0"></p>
+
+<div class="filter-row" style="margin-top:10px">
+<div><label>Sort Lab</label><select id="sortLab" onchange="renderLabs()"><option value="low">Low Price First</option><option value="near">Nearest Lab</option><option value="rating">Top Rated</option></select></div>
+<div><label>Collection Time</label><select id="labTime"><option>Morning 7-10 AM</option><option>Afternoon 12-3 PM</option><option>Evening 4-7 PM</option></select></div>
+<div><label>Report Time</label><select id="labReport"><option>Same Day</option><option>Next Day</option><option>24 Hours</option></select></div>
+</div>
+</div>
+<div id="labList"><p style="text-align:center;color:#7b8aa5">Loading labs...</p></div>
+<div class="form-box" id="bookForm2" style="display:none">
+<h4 style="margin:0 0 10px 0;font-size:12px;color:#5cb3ff">Confirm Lab Test - <span id="selLabName"></span></h4>
+<label>Full Address (For Sample Collection)</label><input id="labAddress" placeholder="House No, Area, City, Pincode">
+<label>Phone</label><input id="labPhone" placeholder="Mobile Number">
+<label>Date</label><input type="date" id="labDate">
+<button class="btn btn-green" style="width:100%;margin-top:12px;padding:12px" onclick="confirmLabBooking()">Book Home Collection</button>
+</div>
+<div class="success" id="success2"></div>
+</div>
+
+<!-- TAB 3 : VIDEO -->
+<div class="section" id="sec3">
+<div class="filters">
+<label>Video Consult - Choose Specialist Doctor</label>
+<div class="filter-row" style="margin-top:8px">
+<div><label>Sort By</label><select id="sortVideo" onchange="renderVideoDoctors()"><option value="low">Low Fees First</option><option value="rating">Top Rating</option><option value="exp">Most Experience</option></select></div>
+<div><label>Degree</label><select id="degVideo" onchange="renderVideoDoctors()"><option value="all">All Degrees</option><option value="MBBS">MBBS</option><option value="MD">MD</option><option value="Specialist">Specialist</option></select></div>
+<div><label>Language</label><select id="langVideo"><option>Hindi + English</option><option>Hindi Only</option><option>English Only</option><option>Marathi</option></select></div>
+</div>
+</div>
+<div id="videoList"><p style="text-align:center;color:#7b8aa5">Loading doctors...</p></div>
+<div id="videoBox"><iframe id="videoFrame" width="100%" height="100%" style="border:0" allow="camera; microphone; fullscreen"></iframe></div>
+<div class="success" id="success3"></div>
+</div>
+
+<div style="display:flex;gap:10px;margin-top:16px">
+<button class="btn btn-outline" style="flex:1;padding:11px" onclick="window.location.href='/pp'">Predict Again</button>
+<button class="btn btn-blue" style="flex:1;padding:11px" onclick="window.location.href='/thankyou'">Next</button>
+</div>
+</div>
+
+<!-- SURVEY POPUP - SAMPLE COLLECT HONE KE BAAD -->
+<div id="surveyModal">
+<div class="survey-box">
+<div style="text-align:center"><b style="font-size:15px;color:#fff">Rate Your Experience</b><br><span style="font-size:11px;color:#aabbd5" id="surveyLabName">Lab Name</span></div>
+
+<label style="display:block;margin-top:14px;font-size:11px;color:#7b8aa5">OVERALL RATING OUT OF 5 STARS</label>
+<div class="stars" id="starRow">
+<span class="star" onclick="setStar(1)">&#9733;</span><span class="star" onclick="setStar(2)">&#9733;</span><span class="star" onclick="setStar(3)">&#9733;</span><span class="star" onclick="setStar(4)">&#9733;</span><span class="star" onclick="setStar(5)">&#9733;</span>
+</div>
+<p style="text-align:center;font-size:11px;color:#facc15;margin:0" id="starText">Tap to rate</p>
+
+<label style="display:block;margin-top:12px;font-size:11px;color:#7b8aa5">HOW WAS THE EXPERIENCE?</label>
+<div class="opt-row">
+<span class="opt" onclick="pickOpt(this,'exp')">Excellent</span><span class="opt" onclick="pickOpt(this,'exp')">Good</span><span class="opt" onclick="pickOpt(this,'exp')">Average</span><span class="opt" onclick="pickOpt(this,'exp')">Bad</span>
+</div>
+
+<label style="display:block;margin-top:10px;font-size:11px;color:#7b8aa5">HOW WAS THE BUDGET / PRICE?</label>
+<div class="opt-row">
+<span class="opt" onclick="pickOpt(this,'budget')">Very Affordable</span><span class="opt" onclick="pickOpt(this,'budget')">Reasonable</span><span class="opt" onclick="pickOpt(this,'budget')">Expensive</span>
+</div>
+
+<label style="display:block;margin-top:10px;font-size:11px;color:#7b8aa5">ANY PROBLEM FACED?</label>
+<div class="opt-row">
+<span class="opt" onclick="pickOpt(this,'problem')">No Problem</span><span class="opt" onclick="pickOpt(this,'problem')">Late Arrival</span><span class="opt" onclick="pickOpt(this,'problem')">Rude Behaviour</span><span class="opt" onclick="pickOpt(this,'problem')">Payment Issue</span>
+</div>
+
+<label style="display:block;margin-top:10px;font-size:11px;color:#7b8aa5">WRITE YOUR FEEDBACK (OPTIONAL)</label>
+<textarea id="surveyComment" rows="2" placeholder="Write here..."></textarea>
+
+<div style="display:flex;gap:10px;margin-top:14px">
+<button class="btn btn-outline" style="flex:1;padding:11px" onclick="closeSurvey()">Skip</button>
+<button class="btn btn-blue" style="flex:1;padding:11px" onclick="submitSurvey()">Submit Rating</button>
+</div>
+</div>
+</div>
+
+<div class="bottom-nav">
+<a href="/pp" class="nav-item"><span>Home</span></a>
+<a href="/emergency" class="nav-item"><span>Emergency</span></a>
+<a href="/doctor-ai" class="nav-item"><span>Doctor AI</span></a>
+<a href="/wellbeing" class="nav-item"><span>Well-Being</span></a>
+<a href="/my-profile" class="nav-item active"><span>My Profile</span></a>
+</div>
+
+<script>
+const SUPABASE_URL="https://wuqmsvuafdjhemdiegol.supabase.co";
+const SUPABASE_KEY="sb_publishable_-t3FXKSGBPSkh14okGjkpw_f7ps9fkP";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let ALL_DOCTORS=[], ALL_LABS=[], selectedDoctor=null, selectedLab=null, selectedSlot="05:00 PM", selectedVideoDoc=null;
+let DISEASE = "{{ result.disease or 'General' }}";
+let DOCTOR_SPECIALITY = "{{ result.doctor or 'General Physician' }}";
+let surveyStars=0, surveyExp="", surveyBudget="", surveyProblem="";
+
+let DEMO_DOCTORS = [
+  {name:"Dr. Priya Sharma", degree:"MBBS, MD", speciality:DOCTOR_SPECIALITY, experience:12, rating:4.9, reviews:1240, distance_km:1.2, fee:299, old_fee:499, hospital:"City Care Hospital, Pune", available:"Today Available", type:"MD", language:"Hindi, English"},
+  {name:"Dr. Rahul Deshmukh", degree:"MBBS", speciality:DOCTOR_SPECIALITY, experience:8, rating:4.8, reviews:860, distance_km:2.1, fee:199, old_fee:299, hospital:"Sharma Clinic, Near You", available:"Today Available", type:"MBBS", language:"Hindi, Marathi"},
+  {name:"Dr. Anjali Patil", degree:"MBBS, MD, DM", speciality:DOCTOR_SPECIALITY+" Specialist", experience:15, rating:4.9, reviews:2100, distance_km:3.5, fee:499, old_fee:799, hospital:"Apollo Clinic, Pune", available:"Tomorrow", type:"Specialist", language:"Hindi, English"},
+  {name:"Dr. Amit Verma", degree:"MBBS, MS", speciality:DOCTOR_SPECIALITY, experience:10, rating:4.7, reviews:950, distance_km:0.8, fee:249, old_fee:399, hospital:"Verma Health Centre", available:"Today Available", type:"MD", language:"Hindi, English"},
+];
+let DEMO_LABS = [
+  {name:"Thyrocare Lab", test_name:"CBC + " + DISEASE + " Panel", price:399, old_price:899, rating:4.8, reviews:1250, distance_km:1.5, report_time:"Same Day - 6 Hours"},
+  {name:"Dr Lal PathLabs", test_name:"Complete " + DISEASE + " Profile", price:599, old_price:1199, rating:4.9, reviews:2100, distance_km:2.2, report_time:"Same Day"},
+  {name:"Metropolis Lab", test_name:"Advanced " + DISEASE + " Test", price:499, old_price:999, rating:4.7, reviews:980, distance_km:3.0, report_time:"Next Day"},
+  {name:"Local Diagnostic Centre", test_name:"Basic " + DISEASE + " Test", price:199, old_price:399, rating:4.5, reviews:640, distance_km:0.9, report_time:"Same Day"},
+  {name:"Thyrocare Lab", test_name:"Dengue Test", price:299, old_price:599, rating:4.8, reviews:1250, distance_km:1.5, report_time:"Same Day"},
+  {name:"Thyrocare Lab", test_name:"Thyroid Profile T3 T4 TSH", price:449, old_price:899, rating:4.8, reviews:1250, distance_km:1.5, report_time:"Same Day"},
+  {name:"Dr Lal PathLabs", test_name:"Vitamin D Test", price:799, old_price:1499, rating:4.9, reviews:2100, distance_km:2.2, report_time:"Next Day"},
+  {name:"Metropolis Lab", test_name:"Blood Sugar Fasting", price:149, old_price:299, rating:4.7, reviews:980, distance_km:3.0, report_time:"Same Day"},
+];
+
+async function loadRealData(){
+  let d = await sb.from('doctors').select('*');
+  ALL_DOCTORS = (d.data && d.data.length > 0) ? d.data : DEMO_DOCTORS;
+  let l = await sb.from('labs').select('*');
+  ALL_LABS = (l.data && l.data.length > 0) ? l.data : DEMO_LABS;
+  // User reviews se rating update karo
+  let r = await sb.from('lab_reviews').select('*');
+  if(r.data){ r.data.forEach(rev=>{ let lab=ALL_LABS.find(x=>x.name===rev.lab_name); if(lab){ lab.rating = rev.new_rating; lab.reviews = (lab.reviews||0)+1; } }); }
+  renderDoctors(); renderLabs(); renderVideoDoctors();
+}
+function showTab(n){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab'+n).classList.add('active');
+  document.getElementById('sec'+n).classList.add('active');
+}
+function getInitials(name){ return name.replace('Dr. ','').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+function renderDoctors(){
+  let sort=document.getElementById('sortDoc').value, type=document.getElementById('typeDoc').value, fee=document.getElementById('feeDoc').value;
+  let list=[...ALL_DOCTORS];
+  if(type!=="all") list=list.filter(d=>d.type===type);
+  if(fee==="low") list=list.filter(d=>d.fee<300);
+  if(fee==="mid") list=list.filter(d=>d.fee>=300 && d.fee<=600);
+  if(fee==="high") list=list.filter(d=>d.fee>600);
+  if(sort==="near") list.sort((a,b)=>a.distance_km-b.distance_km);
+  if(sort==="low") list.sort((a,b)=>a.fee-b.fee);
+  if(sort==="high") list.sort((a,b)=>b.rating-a.rating);
+  if(sort==="exp") list.sort((a,b)=>b.experience-a.experience);
+  document.getElementById('doctorList').innerHTML = list.map((d,i)=>`
+    <div class="card">
+      <div class="avatar">${getInitials(d.name)}</div>
+      <div style="flex:1">
+        <h4>${d.name} <span class="badge green">Verified</span></h4>
+        <p>${d.degree} | ${d.speciality} | ${d.experience} Yrs Exp<br>Rating ${d.rating} (${d.reviews} reviews) | ${d.distance_km} KM away | ${d.hospital}<br><span class="badge">${d.available}</span> <span class="badge">${d.language}</span></p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div class="price">Rs. ${d.fee} <small>Rs. ${d.old_fee}</small></div>
+          <button class="btn btn-blue" onclick="selectDoctor(${ALL_DOCTORS.indexOf(d)})">Book Now</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function selectDoctor(idx){
+  selectedDoctor=ALL_DOCTORS[idx];
+  document.getElementById('selDocName').innerText=selectedDoctor.name+" - Rs. "+selectedDoctor.fee;
+  document.getElementById('bookForm1').style.display="block";
+  document.getElementById('bookForm1').scrollIntoView({behavior:'smooth'});
+  document.getElementById('aptDate').value=new Date().toISOString().split('T')[0];
+}
+function pickSlot(el,time){ document.querySelectorAll('.slot').forEach(s=>s.classList.remove('active')); el.classList.add('active'); selectedSlot=time; }
+async function confirmDoctorBooking(){
+  let date=document.getElementById('aptDate').value;
+  if(!date){alert("Please select date");return}
+  const {data}=await sb.from('bookings').insert([{patient_name:"{{ result.patient_name }}", doctor_name:selectedDoctor.name, date:date, time:selectedSlot}]).select().single();
+  let box=document.getElementById('success1'); box.style.display="block";
+  box.innerHTML=`<b style="color:#4ade80">Appointment Confirmed</b><br><span style="font-size:11px">${selectedDoctor.name} - ${selectedDoctor.speciality}<br>${date} at ${selectedSlot} | Fees Rs. ${selectedDoctor.fee} | ${selectedDoctor.hospital}<br>Booking ID: ${data?data.id.slice(0,8):"PREDICT"}</span>`;
+  document.getElementById('bookForm1').style.display="none";
+}
+
+// LAB LIST - SEARCH + CORRECT ORDER : LAB NAME -> TEST NAME -> RATING
+function renderLabs(){
+  let sort=document.getElementById('sortLab').value;
+  let q=(document.getElementById('labSearch').value||"").toLowerCase().trim();
+  let list=[...ALL_LABS];
+  if(q){ list=list.filter(l=> (l.test_name+" "+l.name).toLowerCase().includes(q)); document.getElementById('searchResultText').innerText = list.length+" results found for '"+q+"'"; }
+  else { document.getElementById('searchResultText').innerText=""; }
+  if(sort==="low") list.sort((a,b)=>a.price-b.price);
+  if(sort==="near") list.sort((a,b)=>a.distance_km-b.distance_km);
+  if(sort==="rating") list.sort((a,b)=>b.rating-a.rating);
+  if(list.length===0){ document.getElementById('labList').innerHTML="<p style='text-align:center;color:#7b8aa5;padding:20px'>No lab test found for this search. Try CBC, Dengue, Thyroid, Vitamin D</p>"; return; }
+  document.getElementById('labList').innerHTML=list.map((l,i)=>`
+    <div class="card">
+      <div class="avatar">LAB</div>
+      <div style="flex:1">
+        <h4>${l.name}</h4>
+        <p style="color:#5cb3ff;font-weight:600;font-size:12px">${l.test_name}</p>
+        <p>Rating ${l.rating} / 5 (${l.reviews||0} reviews) | ${l.distance_km} KM | Report: ${l.report_time}<br><span class="badge green">Home Collection Free</span> <span class="badge">User Rated: ${l.rating} / 5</span></p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div class="price">Rs. ${l.price} <small>Rs. ${l.old_price}</small></div>
+          <button class="btn btn-green" onclick="selectLab(${ALL_LABS.indexOf(l)})">Book Home Visit</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function selectLab(idx){
+  selectedLab=ALL_LABS[idx];
+  document.getElementById('selLabName').innerText=selectedLab.name+" - "+selectedLab.test_name+" - Rs. "+selectedLab.price;
+  document.getElementById('bookForm2').style.display="block";
+  document.getElementById('bookForm2').scrollIntoView({behavior:'smooth'});
+  document.getElementById('labDate').value=new Date().toISOString().split('T')[0];
+}
+async function confirmLabBooking(){
+  let addr=document.getElementById('labAddress').value, phone=document.getElementById('labPhone').value, date=document.getElementById('labDate').value, time=document.getElementById('labTime').value;
+  if(!addr || !phone){alert("Please enter address and phone - Lab executive will visit on this address");return}
+  const {data}=await sb.from('lab_tests').insert([{test_name:selectedLab.test_name, price:selectedLab.price}]).select().single();
+  let box=document.getElementById('success2'); box.style.display="block";
+  box.innerHTML=`<b style="color:#4ade80">Lab Test Booked - Home Collection Confirmed</b><br><span style="font-size:11px">${selectedLab.name} - ${selectedLab.test_name} - Rs. ${selectedLab.price}<br>${date} | ${time}<br>${addr}<br>Lab executive will visit to collect sample. Report in ${selectedLab.report_time}.<br>Booking ID: ${data?data.id.slice(0,8):"LAB"}</span><br><button class="btn btn-blue" style="margin-top:10px" onclick="openSurvey()">Rate Your Experience</button>`;
+  document.getElementById('bookForm2').style.display="none";
+  // Sample collect hone ke baad auto survey - demo me 5 sec baad, real me collection complete pe
+  setTimeout(()=>{ openSurvey(); }, 8000);
+}
+
+// SURVEY FUNCTIONS
+function openSurvey(){
+  if(!selectedLab) return;
+  document.getElementById('surveyLabName').innerText = selectedLab.name+" - "+selectedLab.test_name;
+  document.getElementById('surveyModal').classList.add('active');
+}
+function closeSurvey(){ document.getElementById('surveyModal').classList.remove('active'); }
+function setStar(n){
+  surveyStars=n;
+  document.querySelectorAll('.star').forEach((s,i)=>{ s.classList.toggle('active', i<n); });
+  document.getElementById('starText').innerText = n+" / 5 Stars";
+}
+function pickOpt(el, type){
+  let parent=el.parentElement;
+  parent.querySelectorAll('.opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  if(type==='exp') surveyExp=el.innerText;
+  if(type==='budget') surveyBudget=el.innerText;
+  if(type==='problem') surveyProblem=el.innerText;
+}
+async function submitSurvey(){
+  if(surveyStars===0){ alert("Please select stars out of 5"); return; }
+  let comment=document.getElementById('surveyComment').value;
+  // Average rating calculate karke save karo
+  let oldRating = selectedLab.rating || 4.5;
+  let oldCount = selectedLab.reviews || 0;
+  let newRating = ((oldRating*oldCount + surveyStars)/(oldCount+1)).toFixed(1);
+  await sb.from('lab_reviews').insert([{lab_name:selectedLab.name, test_name:selectedLab.test_name, stars:surveyStars, new_rating:parseFloat(newRating), experience:surveyExp, budget:surveyBudget, problem:surveyProblem, comment:comment}]);
+  // UI me rating update karo - ab is lab ke neeche nayi rating dikhegi
+  selectedLab.rating = parseFloat(newRating);
+  selectedLab.reviews = oldCount+1;
+  renderLabs();
+  closeSurvey();
+  alert("Thank you! Your rating "+surveyStars+" / 5 saved. Now this lab shows "+newRating+" rating.");
+}
+
+function renderVideoDoctors(){
+  let sort=document.getElementById('sortVideo').value, deg=document.getElementById('degVideo').value;
+  let list=[...ALL_DOCTORS];
+  if(deg!=="all") list=list.filter(d=>d.type===deg || d.degree.includes(deg));
+  if(sort==="low") list.sort((a,b)=>a.fee-b.fee);
+  if(sort==="rating") list.sort((a,b)=>b.rating-a.rating);
+  if(sort==="exp") list.sort((a,b)=>b.experience-a.experience);
+  document.getElementById('videoList').innerHTML=list.map((d,i)=>`
+    <div class="card">
+      <div class="avatar">${getInitials(d.name)}</div>
+      <div style="flex:1">
+        <h4>${d.name} <span class="badge green">Online Now</span></h4>
+        <p>${d.degree} | ${d.speciality} Specialist | ${d.experience} Yrs<br>Rating ${d.rating} (${d.reviews}) | ${d.language} | Next Slot: In 15 min</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
+          <div class="price">Rs. ${d.fee-50} <small>Rs. ${d.old_fee}</small><br><span style="font-size:9px;color:#aabbd5">Video Consult - 15 min</span></div>
+          <button class="btn btn-purple" onclick="startVideoWith(${ALL_DOCTORS.indexOf(d)})">Start Video Call</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+function startVideoWith(idx){
+  selectedVideoDoc=ALL_DOCTORS[idx];
+  const room="PredictAI-"+Math.random().toString(36).slice(2,8);
+  document.getElementById('videoBox').style.display="block";
+  document.getElementById('videoFrame').src="https://meet.jit.si/"+room;
+  sb.from('video_calls').insert([{room_link:"https://meet.jit.si/"+room, doctor_name:selectedVideoDoc.name}]);
+  let box=document.getElementById('success3'); box.style.display="block";
+  box.innerHTML=`<b style="color:#a78bfa">Video Call Started with ${selectedVideoDoc.name}</b><br><span style="font-size:11px">${selectedVideoDoc.degree} | ${selectedVideoDoc.speciality} | Fees Rs. ${selectedVideoDoc.fee-50}<br>Please allow camera and microphone below</span>`;
+  document.getElementById('videoBox').scrollIntoView({behavior:'smooth'});
+}
+loadRealData();
+</script>
+</body>
+</html>

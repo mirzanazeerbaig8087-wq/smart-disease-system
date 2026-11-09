@@ -62,7 +62,6 @@ body{margin:0;background:#0a1220;display:flex;justify-content:center;padding:20p
 <div class="set-item" onclick="openPage('termsPage')"><span class="menu-icon" style="background:rgba(168,85,247,0.15)">📝</span> Terms & Conditions</div>
 </div>
 </div>
-
 <div id="homeContent">
 <div class="patient-bar">
 <div><div style="font-size:9px;color:#7b8aa5">PATIENT NAME</div><div style="color:#fff;font-size:12px;font-weight:600">{{ result.patient_name }}</div></div>
@@ -71,35 +70,28 @@ body{margin:0;background:#0a1220;display:flex;justify-content:center;padding:20p
 <div><div style="font-size:9px;color:#7b8aa5">DATE</div><div style="color:#fff;font-size:12px">{{ result.date }}</div></div>
 <div><div style="font-size:9px;color:#7b8aa5">DURATION</div><div style="color:#fff;font-size:12px">{{ result.duration or 'N/A' }}</div></div>
 </div>
-
 <div class="pred-box">
 <h2 style="margin:0;color:#5cb3ff;font-size:22px">{{ result.disease }} - {{ result.confidence }}%</h2>
 <p style="color:#aabbd5;font-size:11px;margin:6px 0 0 0">Accuracy: {{ result.confidence }}% | Symptoms: {{ result.symptoms }} | AI: {{ result.ai_used }}</p>
 <p style="color:#ff8a8a;font-size:10px;margin-top:6px">⚠️ Consult your doctor before taking any action</p>
 </div>
-
-<!-- ===== FIXED ATTACHED PHOTO - BASE64 SE 100% PDF ME AYEGI ===== -->
 {% if result.uploaded_b64 or result.uploaded_path %}
 <div class="horiz-box" style="border:2px solid #3a7bff; background: linear-gradient(180deg,#2a3a5a,#1f2d4a);">
 <h4 style="margin:0 0 12px 0;color:#5cb3ff;font-size:12px">📎 Attached File - Included in PDF</h4>
-
 {% if result.ai_observation %}
 <div style="background:#1f2d4a;border-radius:8px;padding:12px;margin-bottom:12px;">
 <b style="color:#5cb3ff;font-size:10px">🤖 AI OBSERVATION:</b><br>
 <span style="font-size:11px;color:#c2d1e8;line-height:1.6">{{ result.ai_observation }}</span>
 </div>
 {% endif %}
-
 {% if result.observed_from_image %}
 <div style="margin-bottom:12px;">
 <b style="color:#7b8aa5;font-size:9px">DETECTED FROM IMAGE:</b><br>
 {% for s in result.observed_from_image %}<span class="sym-tag" style="background:#3a7bff;color:#fff">{{ s }}</span>{% endfor %}
 </div>
 {% endif %}
-
 <div style="text-align:center; margin-top:12px;">
 {% if result.uploaded_b64 %}
-  <!-- YEHI FIX HAI - BASE64 IMAGE, CORS KA CHAKKAR HI KHATAM -->
   <p style="font-size:10px;color:#7b8aa5;margin-bottom:8px">📷 {{ result.uploaded_file }}</p>
   <img id="attachedImage" src="data:image/jpeg;base64,{{ result.uploaded_b64 }}" style="max-width:100%; max-height:450px; border:2px solid #3a4a6a; border-radius:12px; background:#fff">
 {% elif result.uploaded_path %}
@@ -107,47 +99,38 @@ body{margin:0;background:#0a1220;display:flex;justify-content:center;padding:20p
     <p style="font-size:10px;color:#7b8aa5">PDF: {{ result.uploaded_file }}</p>
     <a href="{{ result.uploaded_path }}" target="_blank" style="color:#fff;background:#2f7bff;padding:8px 16px;border-radius:20px;font-size:10px;text-decoration:none">📄 View PDF</a>
   {% else %}
-    <img id="attachedImage" src="{{ result.uploaded_path }}" crossorigin="anonymous" style="max-width:100%; max-height:450px; border-radius:12px;">
+    <img id="attachedImage" src="{{ result.uploaded_path }}" style="max-width:100%; max-height:450px; border-radius:12px;">
   {% endif %}
 {% endif %}
 </div>
 </div>
 {% endif %}
-
 <div class="three-grid">
 <div class="small-card"><div style="font-size:26px">🍎</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Diet Plan</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.diet }}</div></div>
 <div class="small-card"><div style="font-size:26px">🏃</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Exercise</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.exercise }}</div></div>
 <div class="small-card"><div style="font-size:26px">🛡️</div><h4 style="margin:5px 0;color:#5cb3ff;font-size:11px">Precaution</h4><div style="font-size:10px;color:#c2d1e8;text-align:left;line-height:1.6">{{ result.precaution }}</div></div>
 </div>
-
 <div class="horiz-box"><h4 style="margin:0 0 10px 0;color:#5cb3ff;font-size:11px">📋 Symptoms / Description</h4>
 <div>{% for s in result.symptoms.split(',') if s.strip() %}<span class="sym-tag">{{ s.strip() }}</span>{% endfor %}</div>
 <div style="background:#1f2d4a;border-radius:8px;padding:12px;margin-top:12px;font-size:11px;color:#c2d1e8;line-height:1.6"><b style="color:#7b8aa5;font-size:9px">DISEASE DESCRIPTION</b><br><br>{{ result.description }}</div>
 </div>
-
 <div class="horiz-box"><h4 style="margin:0 0 10px 0;color:#5cb3ff;font-size:11px">🧪 Lab Test</h4><div>{% for test in result.lab_tests %}<span class="lab-tag">🧪 {{ test }}</span>{% endfor %}</div></div>
-
-<!-- MAP WALA BOX - isko PDF me hide karenge taaki taint na ho -->
 <div class="horiz-box" data-html2canvas-ignore="true"><div style="display:flex;justify-content:space-between;margin-bottom:10px"><h4 style="margin:0;color:#5cb3ff;font-size:11px">📍 Nearest Hospital & Doctor: {{ result.doctor }}</h4></div>
 <div id="hospitalList"><p style="color:#7b8aa5;font-size:10px">Click to find nearby hospitals.</p></div>
 <button class="btn2" id="hospBtn" style="width:100%;margin-top:10px" onclick="findNearby('{{ result.doctor }}')">📍 Check Nearest {{ result.doctor }}</button>
 <div id="mapBox" style="display:none;margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid #3a4a6a;height:220px;background:#1f2d4a"><iframe id="mapFrame" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen></iframe></div>
 </div>
-
 <div style="display:flex;justify-content:center;gap:12px;margin-top:18px" data-html2canvas-ignore="true">
 <button style="padding:11px 22px;border-radius:20px;background:#2a344d;border:1px solid #3a4a6a;color:#c2d1e8;font-size:11px;cursor:pointer;font-weight:600" onclick="window.location.href='/pp'">← Predict Again</button>
 <button class="btn2" style="padding:11px 30px;font-size:12px;font-weight:700;background:linear-gradient(135deg,#3a7bff,#5aa0ff)" onclick="window.location.href='/thankyou'">Next →</button>
 </div>
 </div>
-
 <div class="page" id="profilePage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">My Profile</h2></div><div id="profileContent">Loading...</div></div>
 <div class="page" id="historyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">History</h2></div><div id="historyList">Loading...</div></div>
 <div class="page" id="privacyPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Privacy Policy</h2></div><div class="policy-box"><h4>Medical Disclaimer</h4><p>AI tool only, not certified doctor. Consult MBBS doctor. Emergency call 108.</p></div></div>
 <div class="page" id="termsPage"><div class="page-head"><div class="back" onclick="closePage()">←</div><h2 style="color:#6aa8ff;margin:0">Terms</h2></div><div class="policy-box"><h4>Disclaimer</h4><p>Predict AI is informational.</p></div></div>
 </div>
-
 <div id="logoutModal"><div class="modal-box"><div style="font-size:40px">🚪</div><h3 style="color:#fff;margin:10px 0">Logout?</h3><div style="display:flex;gap:10px;margin-top:18px"><button onclick="hideLogoutModal()" style="flex:1;padding:10px;border-radius:20px;background:#2a344d;border:1px solid #3a4a6a;color:#fff;cursor:pointer">No</button><button onclick="confirmLogout()" style="flex:1;padding:10px;border-radius:20px;background:#ff4b4b;border:none;color:#fff;cursor:pointer;font-weight:700">Yes</button></div></div></div>
-
 <div class="bottom-nav" data-html2canvas-ignore="true">
   <a href="/pp" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></a>
   <a href="/emergency" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span>Emergency</span></a>
@@ -155,7 +138,6 @@ body{margin:0;background:#0a1220;display:flex;justify-content:center;padding:20p
   <a href="/wellbeing" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span>Well-Being</span></a>
   <a href="/my-profile" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>My Profile</span></a>
 </div>
-
 <script>
 function toggleSet(){document.getElementById('setPanel').classList.toggle('active')}
 document.addEventListener('click', (e)=>{ if(!e.target.closest('[onclick="toggleSet()"]') && !e.target.closest('#setPanel')){ document.getElementById('setPanel').classList.remove('active'); } });
@@ -183,67 +165,41 @@ function loadHistory(){
 function showLogoutModal(){document.getElementById('setPanel').classList.remove('active');document.getElementById('logoutModal').classList.add('active')}
 function hideLogoutModal(){document.getElementById('logoutModal').classList.remove('active')}
 function confirmLogout(){ window.location.href='/logout'; }
-
-// ===== YEHI MAIN FIX HAI - YE KIDHER PUCHA THA =====
+// ===== PDF FIX - DESIGN SAME, SIRF ANDAR KA LOGIC FIX =====
+// Pehle photo wala try karega, fail hua to server wala /download_pdf kholega
 async function saveAsPdf(){
   document.getElementById('setPanel').classList.remove('active');
   const area = document.getElementById('captureArea');
-  
+  const mapBox = document.getElementById('mapBox');
+  const mapWasVisible = mapBox ? mapBox.style.display : 'none';
+  if(mapBox) mapBox.style.display = 'none';
   const loading = document.createElement('div');
   loading.innerText = '⏳ Generating PDF with photo...';
   loading.style = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1e2a44;color:#5cb3ff;padding:15px 25px;border-radius:30px;border:1px solid #3a4a6a;z-index:9999;font-size:13px';
   document.body.appendChild(loading);
-  
   try{
-    // Photo load hone ka wait karo
     const img = document.getElementById('attachedImage');
-    if(img){
-      if(!img.complete){
-        await new Promise(resolve => {
-          img.onload = resolve;
-          img.onerror = resolve;
-          setTimeout(resolve, 3000);
-        });
-      }
+    if(img && !img.complete){
+      await new Promise(resolve => { img.onload = resolve; img.onerror = resolve; setTimeout(resolve, 3000); });
     }
-    
-    // YE LINE PUCHI THI - YAHAN HAI
-    const canvas = await html2canvas(document.getElementById('captureArea'), { 
-        useCORS: true, 
-        allowTaint: true, 
-        scale: 2,
-        backgroundColor: "#0a1220",
-        logging: false,
-        ignoreElements: (el) => el.hasAttribute('data-html2canvas-ignore')
-    });
-    
+    const canvas = await html2canvas(area, { useCORS: true, allowTaint: false, scale: 2, backgroundColor: "#0a1220", logging: false, ignoreElements: (el) => el.hasAttribute('data-html2canvas-ignore') });
     const imgData = canvas.toDataURL('image/png');
     const { jsPDF } = window.jspdf;
     const pdf = new jsPDF('p','mm','a4');
     const pdfWidth = pdf.internal.pageSize.getWidth();
     const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-    
-    let heightLeft = pdfHeight;
-    let position = 0;
+    let heightLeft = pdfHeight; let position = 0;
     pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
     heightLeft -= pdf.internal.pageSize.getHeight();
-    
-    while (heightLeft > 0) {
-      position = heightLeft - pdfHeight;
-      pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-      heightLeft -= pdf.internal.pageSize.getHeight();
-    }
-    
+    while (heightLeft > 0) { position = heightLeft - pdfHeight; pdf.addPage(); pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight); heightLeft -= pdf.internal.pageSize.getHeight(); }
     pdf.save('PredictAI-Report-{{ result.patient_name }}.pdf');
-    
   }catch(e){
     console.error(e);
-    alert('PDF Error: '+e.message);
+    window.location.href = '/download_pdf';
   }
-  document.body.removeChild(loading);
+  if(mapBox) mapBox.style.display = mapWasVisible;
+  if(document.body.contains(loading)) document.body.removeChild(loading);
 }
-
 function getDistanceKm(lat1,lon1,lat2,lon2){const R=6371;const dLat=(lat2-lat1)*Math.PI/180;const dLon=(lon2-lon1)*Math.PI/180;const a=Math.sin(dLat/2)**2+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;return (R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a)));}
 function findNearby(spec){let listBox=document.getElementById('hospitalList');let btn=document.getElementById('hospBtn');let mapBox=document.getElementById('mapBox');let mapFrame=document.getElementById('mapFrame');if(!navigator.geolocation){listBox.innerHTML="<p style='color:#ff8a8a'>Geolocation not supported</p>";return;}listBox.innerHTML="<p style='color:#5cb3ff;font-size:10px'>📡 Getting location...</p>";btn.innerText="Getting Location...";navigator.geolocation.getCurrentPosition(async (pos)=>{let lat=pos.coords.latitude;let lon=pos.coords.longitude;btn.innerText=`✅ Location Found`;mapBox.style.display="block";mapFrame.src=`https://www.google.com/maps?q=${lat},${lon}&z=14&output=embed`;try{const q=`[out:json][timeout:25];(node["amenity"="hospital"](around:5000,${lat},${lon});way["amenity"="hospital"](around:5000,${lat},${lon}););out center 12;`;const url=`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`;let res=await fetch(url);let data=await res.json();let hospitals=data.elements.map(el=>{let hLat=el.lat||el.center?.lat;let hLon=el.lon||el.center?.lon;if(!hLat)return null;return{name:el.tags?.name||`${spec} Care Center`,lat:hLat,lon:hLon,addr:el.tags?.["addr:city"]||"Near you",dist:getDistanceKm(lat,lon,hLat,hLon)}}).filter(Boolean).sort((a,b)=>a.dist-b.dist).slice(0,6);listBox.innerHTML=hospitals.map(h=>`<div class="hosp-item"><div><b style="color:#fff">${h.name}</b><br><span style="font-size:9px;color:#7b8aa5">${h.addr} • ${h.dist.toFixed(1)} KM</span></div><div><a href="https://www.google.com/maps/dir/?api=1&origin=${lat},${lon}&destination=${h.lat},${h.lon}" target="_blank" style="color:#fff;background:#2f7bff;padding:4px 10px;border-radius:12px;font-size:9px;text-decoration:none">Direction</a></div></div>`).join('');}catch(e){listBox.innerHTML=`<p style='color:#ff8a8a'>Error: ${e.message}</p>`;} },(err)=>{listBox.innerHTML=`<p style='color:#ff8a8a'>❌ ${err.message}</p>`;btn.innerText="📍 Allow Location & Retry";},{enableHighAccuracy:true,timeout:15000});}
 </script>

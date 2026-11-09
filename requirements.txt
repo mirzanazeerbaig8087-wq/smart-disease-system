@@ -12,3 +12,6 @@ groq
 openai
 google-generativeai
 huggingface-hub
+psycopg2-binary
+reportlab
+PyMuPDF

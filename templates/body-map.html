@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Predict AI - Symptom Checker</title>
+<style>
+*{box-sizing:border-box} body{margin:0;background:#0a1128;color:#fff;font-family:Arial}
+.main{max-width:1000px;margin:18px auto;background:#16213e;border-radius:16px;padding:22px}
+h1{font-size:24px;margin:0} h1 span{color:#4da6ff}
+.sub{color:#aaa;font-size:14px;margin:6px 0 16px} .sub b{color:#4da6ff}
+.flex{display:flex;gap:18px}
+.left{flex:1.1} .right{width:340px}
+input{width:100%;padding:12px;border-radius:10px;border:1px solid #2a3a5e;background:#0f1a33;color:#fff;margin-bottom:12px;outline:none}
+.sec-title{font-size:13px;color:#4da6ff;letter-spacing:.5px;margin:4px 0 10px}
+.part-btns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;max-height:120px;overflow:auto}
+.pbtn{padding:7px 12px;border-radius:20px;border:1px solid #2a3a5e;background:#0f1a33;color:#aaa;font-size:12px;cursor:pointer}
+.pbtn.active{background:#2b7fff;color:#fff;border-color:#2b7fff}
+.sym-list{background:#0f1a33;border:1px solid #2a3a5e;border-radius:12px;max-height:340px;overflow:auto}
+.sym-item{padding:12px 14px;border-bottom:1px solid #1e2f52;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-size:13px}
+.sym-item:last-child{border:none}
+.sym-item:hover{background:#1e2f52}
+.sym-item.added{background:#1a3a6a;color:#7db4ff}
+.sym-item span:last-child{color:#2b7fff;font-size:18px}
+.selected-box{background:#0f1a33;border:1px solid #2a3a5e;border-radius:12px;padding:14px;min-height:110px;margin-top:14px}
+.chip{display:inline-flex;align-items:center;gap:6px;background:#2b7fff;padding:7px 10px;border-radius:20px;font-size:12px;margin:4px 4px 0 0}
+.chip b{cursor:pointer;background:rgba(255,255,255,.25);width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px}
+.top-controls{display:flex;justify-content:center;margin-bottom:10px}
+.gender-wrap{display:flex;background:#0f1a33;border:1px solid #2a3a5e;border-radius:30px;padding:4px}
+.gbtn{padding:8px 18px;border-radius:20px;border:none;background:transparent;color:#aaa;cursor:pointer;font-weight:bold;font-size:13px}
+.gbtn.active{background:#2b7fff;color:#fff}
+.body-wrap{height:540px;position:relative;background:#fff;border-radius:12px;overflow:hidden;display:flex;justify-content:center;align-items:center}
+#bodyImage{width:100%;height:100%;object-fit:contain;display:block;cursor:pointer;background:#fff}
+.body-label{position:absolute;top:10px;left:50%;transform:translateX(-50%);background:#2b7fff;color:#fff;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:bold;z-index:3}
+.rotate-btn{position:absolute;bottom:12px;right:12px;width:48px;height:48px;border-radius:50%;background:#2b7fff;border:2px solid #fff;color:#fff;font-size:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 15px rgba(0,0,0,.4);z-index:2}
+.btns{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;padding:13px;border-radius:30px;border:none;font-weight:bold;cursor:pointer}
+.clear{background:transparent;border:1px solid #2a3a5e;color:#fff}
+.cont{background:#2b7fff;color:#fff}
+@media(max-width:800px){.flex{flex-direction:column}.right{width:100%}}
+</style>
+</head>
+<body>
+<div class="main">
+<h1><span>Predict AI</span> Symptom Checker</h1>
+<p class="sub">Try Predict AI's <b>New Symptom Checker.</b></p>
+<div class="flex">
+<div class="left">
+<h2 style="font-size:19px;margin:0 0 12px">What are your symptoms?</h2>
+<input id="search" placeholder="🔍 Type your main symptom here" oninput="filterList(this.value)">
+<div class="sec-title">SELECT BODY PART</div>
+<div class="part-btns" id="partBtns"></div>
+<div class="sec-title" id="listTitle">SYMPTOMS FOR HEAD - TAP TO ADD</div>
+<div class="sym-list" id="symList"><div style="padding:14px;color:#888">Loading symptoms...</div></div>
+<div class="selected-box">
+<div class="sec-title" style="margin:0 0 6px">✅ SELECTED SYMPTOMS (<span id="count">0</span>)</div>
+<div id="selected"><p style="color:#888;font-size:13px;margin:6px 0">No symptoms added yet</p></div>
+</div>
+</div>
+<div class="right">
+<div class="top-controls"><div class="gender-wrap">
+<button class="gbtn active" id="btnFemale" onclick="setGender('female')">♀ Female</button>
+<button class="gbtn" id="btnMale" onclick="setGender('male')">♂ Male</button>
+</div></div>
+<div class="body-wrap">
+<div class="body-label" id="bodyLabel">HEAD - FRONT</div>
+<img id="bodyImage" src="/static/female-front.webp">
+<button class="rotate-btn" onclick="flipView()">↻</button>
+</div>
+</div>
+</div>
+<div class="btns"><button class="btn clear" onclick="clearAll()">Clear All</button><button class="btn cont" id="continueBtn" onclick="goContinue()">Continue</button></div>
+</div>
+<script>
+let gender='female', view='front', currentPart='Head', selected=[];
+let data={};
+
+fetch('/static/symptoms.json')
+  .then(r=>r.json())
+  .then(j=>{ data=j; renderPartBtns(); renderList(); })
+  .catch(()=>{ document.getElementById('symList').innerHTML='<div style="padding:14px;color:#ff8080">symptoms.json not found in /static/</div>'; });
+
+let partsOrder=["Head","Eye","Ear","Nose","Face","Mouth","Jaw","Neck","Shoulder","Chest","Breast","Armpit","Arm","Hand","Belly","Genital","Hip","Back","Butt","Anus","Leg","Foot"];
+
+function renderPartBtns(){
+  let parts = partsOrder.filter(p=>data[p]);
+  document.getElementById('partBtns').innerHTML=parts.map(p=>`<button class="pbtn ${p==currentPart?'active':''}" onclick="setPart('${p}')">${p}</button>`).join('');
+}
+function setPart(p){
+  currentPart=p;
+  document.getElementById('search').value='';
+  renderPartBtns(); renderList();
+  document.getElementById('bodyLabel').textContent=p.toUpperCase()+' - '+view.toUpperCase();
+}
+function render(){
+  document.getElementById('bodyImage').src=`/static/${gender}-${view}.webp`;
+  renderPartBtns(); renderList();
+}
+function renderList(filter=''){
+  let list=data[currentPart]||[];
+  if(filter) list=list.filter(x=>x.toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('listTitle').textContent=`SYMPTOMS FOR ${currentPart.toUpperCase()} (${list.length}) - TAP TO ADD`;
+  document.getElementById('symList').innerHTML=list.map(s=>`<div class="sym-item ${selected.includes(s)?'added':''}" onclick="addSym(this,'${s.replace(/'/g,"\\'")}')"><span>${s}</span><span>${selected.includes(s)?'✓':'+'}</span></div>`).join('') || '<div style="padding:14px;color:#888">No symptom found</div>';
+}
+function filterList(v){renderList(v)}
+function addSym(el,s){
+  if(!selected.includes(s)) selected.push(s);
+  else selected=selected.filter(x=>x!==s);
+  updateSelected(); renderList(document.getElementById('search').value);
+}
+function removeSym(s){selected=selected.filter(x=>x!==s); updateSelected(); renderList(document.getElementById('search').value);}
+function updateSelected(){
+  document.getElementById('count').textContent=selected.length;
+  document.getElementById('selected').innerHTML=selected.length? selected.map(s=>`<span class="chip">${s} <b onclick="removeSym('${s.replace(/'/g,"\\'")}')">×</b></span>`).join('') : '<p style="color:#888;font-size:13px">No symptoms added yet</p>';
+}
+function clearAll(){selected=[]; updateSelected(); renderList(); localStorage.removeItem('bodymap_data');}
+
+// ===== FIXED - YAHI MAIN FIX HAI =====
+function goContinue(){
+  if(!selected.length){alert('Please select at least 1 symptom');return;}
+  // 1. PP page ke liye save karo - PP wala code isi key se padhta hai
+  localStorage.setItem('bodymap_data', JSON.stringify({
+    symptoms: selected,
+    gender: gender, // 'male' / 'female'
+    fromBodyMap: true
+  }));
+  // 2. Alert mat dikhao, seedha PP page pe bhejo
+  let btn = document.getElementById('continueBtn');
+  btn.innerText = 'Loading...';
+  btn.disabled = true;
+  window.location.href = '/pp';
+}
+
+function setGender(g){
+  gender=g;
+  document.getElementById('btnFemale').classList.toggle('active',g=='female');
+  document.getElementById('btnMale').classList.toggle('active',g=='male');
+  render();
+}
+function flipView(){
+  let img=document.getElementById('bodyImage');
+  img.style.transform='rotateY(90deg)';
+  setTimeout(()=>{
+    view=view=='front'?'back':'front';
+    render();
+    img.style.transform='rotateY(0deg)';
+    document.getElementById('bodyLabel').textContent=currentPart.toUpperCase()+' - '+view.toUpperCase();
+  },250);
+}
+
+document.getElementById('bodyImage').onclick=(e)=>{
+  let r=e.target.getBoundingClientRect();
+  let y=(e.clientY-r.top)/r.height*100;
+  let x=(e.clientX-r.left)/r.width*100;
+  if(view=='back'){
+    if(y<10) setPart('Head');
+    else if(y<16) setPart('Neck');
+    else if(y<26 && (x<35 || x>65)) setPart('Shoulder');
+    else if(y<45) setPart('Back');
+    else if(y<58) setPart('Butt');
+    else if(y<60 && x>42 && x<58) setPart('Anus');
+    else if(y<78) setPart('Leg');
+    else setPart('Foot');
+    return;
+  }
+  if(y<9) setPart('Head');
+  else if(y<12) setPart('Eye');
+  else if(y<13.5 && (x<30 || x>70)) setPart('Ear');
+  else if(y<15) setPart('Nose');
+  else if(y<18) setPart('Face');
+  else if(y<20.5) setPart('Mouth');
+  else if(y<23) setPart('Jaw');
+  else if(y<26) setPart('Neck');
+  else if(y<30 && (x<33 || x>67)) setPart('Shoulder');
+  else if(y<30 && x>=33 && x<=67) setPart('Chest');
+  else if(y<42 && x>32 && x<68){
+    if(gender=='female') setPart('Breast'); else setPart('Chest');
+  }
+  else if(y<44 && (x<28 || x>72)) setPart('Armpit');
+  else if(y<60 && (x<28 || x>72)) setPart('Arm');
+  else if(y<68 && (x<28 || x>72)) setPart('Hand');
+  else if(y<55) setPart('Belly');
+  else if(y<63) setPart('Genital');
+  else if(y<64 && (x<32 || x>68)) setPart('Hip');
+  else if(y<82) setPart('Leg');
+  else setPart('Foot');
+};
+</script>
+</body>
+</html>
